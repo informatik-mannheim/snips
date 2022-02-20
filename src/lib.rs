@@ -1,7 +1,8 @@
 // lib
-
+pub mod parser;
 pub mod util;
 
+use crate::parser::parse;
 use crate::util::Setting;
 use std::fs;
 use std::io;
@@ -9,58 +10,85 @@ use std::path::Path;
 
 pub fn scan(setting: Setting) {
     // val mode = if (exerciseEnv) "(mode EXC) " else ""
-    println!("Scanning {}", setting.src_dir.display());
 
     let metadata = fs::metadata(&setting.src_dir);
     if let Err(e) = metadata {
         println!(
-            "Error: {} is not a directory. {}",
+            "Error: Directory {} does not exist.\n{}",
             &setting.src_dir.display(),
             e
         );
         return;
     }
+    if !setting.src_dir.is_dir() {
+        println!("Error: {} is not a directory.", &setting.src_dir.display());
+        return;
+    }
 
-    scan_rec(&setting.src_dir, "", &setting); // no suffix path at beginning.
-    println!(" ... done");
+    println!("Scanning...");
+    let _r = scan_rec(&setting.src_dir, "", &setting); // no suffix path at beginning.
+    println!("... done");
 }
 
 fn scan_rec(dir: &Path, suffix_path: &str, setting: &Setting) -> io::Result<()> {
     println!(" {}", dir.display());
-    if dir.is_dir() {
-        for entry in fs::read_dir(dir)? {
-            let entry = entry?;
-            let path = entry.path();
-            if path.is_dir() {
-                scan_rec(&path, suffix_path, setting)?;
-            } else {
-                // cb(&entry);
+
+    // Recursively scan other directories:
+    for entry in fs::read_dir(dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_dir() {
+            scan_rec(&path, suffix_path, setting)?;
+        } else {
+            // TODO consider path.extension()
+            // Test if file matches suffix:
+            if let Some(filename) = path.to_str() {
+                if filename.ends_with(setting.file_suffix) {
+                    // Process file:
+                    println!(" {}", path.display());
+                    parse(path.as_path(), setting);
+                } else {
+                    println!(" skipped {}", path.display());
+                }
             }
         }
     }
     Ok(())
 }
 
-// def scanRec(dir: File, suffixPath: String) {
+// Unit tests
 
-//   def createDirIfNotExists(newDir: String) {
-//     val dirFile = new File(newDir) // Access to file.
-//     if (!(dirFile.exists() && dirFile.isDirectory)) {
-//       dirFile.mkdir() // Directory did not exist, create it.
-//     }
-//   }
+#[cfg(test)]
+mod tests {
 
-//   val fullTargetDirPackage = srcTargetDir + suffixPath
-//   val allFiles = dir.listFiles().filter(f => !f.isDirectory && f.getName.endsWith(suffix))
-//   for (file <- allFiles) {
-//     new ExtractCodeSnippet(file, commentEscape, commentEscape2, snippetTargetDir,
-//       fullTargetDirPackage, exerciseEnv)
-//   }
-//   val dirs = dir.listFiles().filter(_.isDirectory)
-//   for (dir <- dirs) {
-//     // Append this directory to the suffix path:
-//     val newSuffixPath = suffixPath + "/" + dir.getName
-//     createDirIfNotExists(srcTargetDir + newSuffixPath)
-//     scanRec(dir, newSuffixPath)
-//   }
-// }
+    use super::scan;
+    use super::util::Setting;
+    use std::path::Path;
+
+    fn config() -> Setting<'static> {
+        // Path is relative to project root.
+        Setting {
+            src_dir: Path::new("tests/testfiles/src"),
+            snippet_target_dir: Path::new("tests/testfiles/snippets"),
+            src_target_dir: Path::new("tests/testfiles/src_dest"),
+            file_suffix: ".java",
+            comment_escape: "//",
+            comment_escape2: "#",
+            exercise_env: false,
+        }
+    }
+
+    #[test]
+    fn it_works() {
+        let setting = config();
+        scan(setting);
+        assert_eq!(true, true);
+    }
+
+    #[test]
+    fn path_end_test() {
+        let path = Path::new("foo/bar/file.java");
+        let b = path.ends_with("file.java");
+        assert_eq!(b, true);
+    }
+}

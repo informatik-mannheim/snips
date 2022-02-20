@@ -48,11 +48,11 @@ fn main() {
     
     let setting = Setting {
         src_dir: Path::new(args.value_of("src_dir").unwrap_or_default()),
-        snippet_target_dir: Path::new(args.value_of("src_dir").unwrap_or_default()),
-        src_target_dir: Path::new(args.value_of("src_dir").unwrap_or_default()),
-        file_suffix: args.value_of("src_dir").unwrap_or_default().to_string(),
-        comment_escape: args.value_of("src_dir").unwrap_or_default().to_string(),
-        comment_escape2: args.value_of("src_dir").unwrap_or_default().to_string(),
+        snippet_target_dir: Path::new(args.value_of("snippet_target_dir").unwrap_or_default()),
+        src_target_dir: Path::new(args.value_of("src_target_dir").unwrap_or_default()),
+        file_suffix: args.value_of("file_suffix").unwrap_or_default(),
+        comment_escape: args.value_of("comment_escape").unwrap_or_default(),
+        comment_escape2: args.value_of("comment_escape2").unwrap_or_default(),
         exercise_env: false,
     };
 

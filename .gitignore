@@ -1,2 +1,6 @@
 /target
 Cargo.lock
+tests/testfiles/snippetsPublicTarget
+tests/testfiles/snippetsSolutionTarget
+tests/testfiles/srcPublicTarget
+tests/testfiles/srcSolutionTarget
