@@ -2,6 +2,7 @@
 
 use crate::util::Setting;
 use std::collections::HashMap;
+use std::fmt::format;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
@@ -36,12 +37,9 @@ pub fn parse(filepath: &Path, setting: &Setting) {
         counter += 1;
         let _x = match test_token(&line, &setting) {
             // see if this line is a token.
-            Some(Token::RegularToken {
-                label: label,
-                start: true,
-            }) => {
+            Some(Token::RegularToken { label, start: true }) => {
                 println!(" + {}", label); // begin of a code snippet.
-                // label is moved into hash map:
+                                          // label is moved into hash map:
                 start(label.to_string(), &mut coll);
                 if coll.get(label).unwrap().counter <= 1 && counter > 1 {
                     // Print ... but not at the beginning of the file
@@ -74,7 +72,32 @@ fn test_token<'a>(line: &'a str, setting: &'a Setting) -> Option<Token<'a>> {
         if is_comment_escape(tokens[0], setting) && tokens[1] == "+OUT" {
             return Some(Token::QuietToken { start: true });
         }
+        if is_comment_escape(tokens[0], setting) && tokens[1] == "-OUT" {
+            return Some(Token::QuietToken { start: false });
+        }
+        if is_comment_escape(tokens[0], setting) && tokens[1] == "+EXC" {
+            return Some(Token::ExerciseToken { start: true });
+        }
+        if is_comment_escape(tokens[0], setting) && tokens[1] == "-EXC" {
+            return Some(Token::ExerciseToken { start: false });
+        }
+        if is_comment_escape(tokens[0], setting) && tokens[1] == "-EXCSUBST" {
+            return Some(Token::ExerciseToken { start: false });
+        }
+        if is_comment_escape(tokens[0], setting) && tokens[1] == "-HEADER" {
+            return Some(Token::ReplaceToken {
+                s: "",
+                start: false,
+            });
+        }
+        if is_comment_escape(tokens[0], setting) && tokens[1] == "-VAR" {
+            return Some(Token::ReplaceToken {
+                s: "",
+                start: false,
+            });
+        }
     }
+
     if tokens.len() >= 3 {
         if is_comment_escape(tokens[0], setting) && tokens[1] == "+IN" {
             return Some(Token::RegularToken {
@@ -87,6 +110,20 @@ fn test_token<'a>(line: &'a str, setting: &'a Setting) -> Option<Token<'a>> {
                 label: tokens[2],
                 start: false,
             });
+        }
+        if is_comment_escape(tokens[0], setting) && tokens[1] == "+HEADER" {
+          let idx = tokens[0].len() + tokens[1].len(); // Truncate first letters.
+          return Some(Token::ReplaceToken{ s: &line[idx..], start: true});
+        }
+
+        if is_comment_escape(tokens[0], setting) && tokens[1] == "+VAR" {
+          let indent: i32 = tokens[2].parse().unwrap();
+           // Truncate first three tokens:
+          let idx = tokens[0].len() + tokens[1].len() + tokens[2].len();
+          // let spaces = 1..indent.map(|c| => ' ');
+          let spaces = "   ";
+          let s = format!("{}{}", spaces, &line[idx..]);
+          return Some(Token::ReplaceToken{ s: s, start: true});
         }
     }
     None
