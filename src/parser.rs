@@ -41,10 +41,10 @@ pub fn parse(filepath: &Path, setting: &Setting) {
                 println!(" + {}", label); // begin of a code snippet.
                                           // label is moved into hash map:
                 start(label.to_string(), &mut coll);
-                if coll.get(label).unwrap().counter <= 1 && counter > 1 {
+                if coll.get(&label).unwrap().counter <= 1 && counter > 1 {
                     // Print ... but not at the beginning of the file
                     // or when ... was printed at the end of a code snippet.
-                    coll.get_mut(label).unwrap().buffer.push_str("...\n");
+                    coll.get_mut(&label).unwrap().buffer.push_str("...\n");
                 }
                 ()
             }
@@ -64,7 +64,7 @@ fn is_comment_escape(text: &str, setting: &Setting) -> bool {
     }
 }
 
-fn test_token<'a>(line: &'a str, setting: &'a Setting) -> Option<Token<'a>> {
+fn test_token<'a>(line: &'a str, setting: &'a Setting) -> Option<Token> {
     // let line = line.clone();
     let tokens: Vec<&str> = line.split_whitespace().collect();
 
@@ -86,13 +86,13 @@ fn test_token<'a>(line: &'a str, setting: &'a Setting) -> Option<Token<'a>> {
         }
         if is_comment_escape(tokens[0], setting) && tokens[1] == "-HEADER" {
             return Some(Token::ReplaceToken {
-                s: "",
+                s: "".to_string(),
                 start: false,
             });
         }
         if is_comment_escape(tokens[0], setting) && tokens[1] == "-VAR" {
             return Some(Token::ReplaceToken {
-                s: "",
+                s: "".to_string(),
                 start: false,
             });
         }
@@ -101,29 +101,33 @@ fn test_token<'a>(line: &'a str, setting: &'a Setting) -> Option<Token<'a>> {
     if tokens.len() >= 3 {
         if is_comment_escape(tokens[0], setting) && tokens[1] == "+IN" {
             return Some(Token::RegularToken {
-                label: tokens[2],
+                label: tokens[2].to_string(),
                 start: true,
             });
         }
         if is_comment_escape(tokens[0], setting) && tokens[1] == "-IN" {
             return Some(Token::RegularToken {
-                label: tokens[2],
+                label: tokens[2].to_string(),
                 start: false,
             });
         }
         if is_comment_escape(tokens[0], setting) && tokens[1] == "+HEADER" {
-          let idx = tokens[0].len() + tokens[1].len(); // Truncate first letters.
-          return Some(Token::ReplaceToken{ s: &line[idx..], start: true});
+            let idx = tokens[0].len() + tokens[1].len(); // Truncate first letters.
+            let s = line[idx..].to_string();
+            return Some(Token::ReplaceToken { s: s, start: true });
         }
-
         if is_comment_escape(tokens[0], setting) && tokens[1] == "+VAR" {
-          let indent: i32 = tokens[2].parse().unwrap();
-           // Truncate first three tokens:
-          let idx = tokens[0].len() + tokens[1].len() + tokens[2].len();
-          // let spaces = 1..indent.map(|c| => ' ');
-          let spaces = "   ";
-          let s = format!("{}{}", spaces, &line[idx..]);
-          return Some(Token::ReplaceToken{ s: s, start: true});
+            let indent: i32 = tokens[2].parse().unwrap();
+            // Truncate first three tokens and fill them with spaces:
+            let c: Vec<char> = (1..indent).into_iter().map(|_| ' ').collect();
+            let mut spaces = String::from_iter(c);
+            let idx = tokens[0].len() + tokens[1].len() + tokens[2].len();
+            let t = &line[idx..];
+            spaces.push_str(t);
+            return Some(Token::ReplaceToken {
+                s: spaces,
+                start: true,
+            });
         }
     }
     None
@@ -170,12 +174,12 @@ impl Record {
 
 /// `label`: name of the token, `start`: start or end?,
 /// `s`: next line is replaced with this text
-enum Token<'a> {
-    RegularToken { label: &'a str, start: bool }, // +/-IN
-    QuietToken { start: bool },                   // +/-OUT
-    ExerciseToken { start: bool },                // +/-EXC
-    ReplaceToken { s: &'a str, start: bool },     //
-    ExerciseReplaceToken { s: &'a str, start: bool }, // +/-EXCSUBST
+enum Token {
+    RegularToken { label: String, start: bool },     // +/-IN
+    QuietToken { start: bool },                      // +/-OUT
+    ExerciseToken { start: bool },                   // +/-EXC
+    ReplaceToken { s: String, start: bool },         //
+    ExerciseReplaceToken { s: String, start: bool }, // +/-EXCSUBST
 }
 
 // Unit tests
