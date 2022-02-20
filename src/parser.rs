@@ -2,27 +2,28 @@
 
 use crate::util::Setting;
 use std::collections::HashMap;
-use std::fmt::format;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 
 const DEFAULTLABEL: &str = "x8gfz4hd"; // just a crazy string.
 
-pub fn parse(filepath: &Path, setting: &Setting) {
+pub fn parse(filepath: &Path, setting: &Setting) -> Result<(), String> {
     let file = File::open(filepath).unwrap();
-    let reader = BufReader::new(file);
+    let reader = BufReader::new(&file);
 
     // Output collector.
     // Key: a label taken from the annotated source code.
     // Values: text buffer to output.
     let mut coll: HashMap<String, Record> = HashMap::new();
 
-    let mut _quiet = false; // if true, lines are omitted.
-    let mut _exercise_quiet = false; // if true, lines are not omitted.
+    let mut quiet = false; // if true, lines are omitted.
+    let mut exercise_quiet = false; // if true, lines are not omitted.
+    let exercise_env = false; // if true, lines are not omitted.
+
     let mut counter = 0;
     // line counter
-    // let no_lines = reader.lines().size_hint().0; // of the the source file
+    let no_lines = BufReader::new(&file).lines().size_hint().0; // of the the source file
 
     // This is the default snippet extracting the whole source code.
     start(DEFAULTLABEL.to_string(), &mut coll);
@@ -35,7 +36,7 @@ pub fn parse(filepath: &Path, setting: &Setting) {
         println!("{}. {}", index + 1, line);
 
         counter += 1;
-        let _x = match test_token(&line, &setting) {
+        let _ = match test_token(&line, &setting) {
             // see if this line is a token.
             Some(Token::RegularToken { label, start: true }) => {
                 println!(" + {}", label); // begin of a code snippet.
@@ -48,12 +49,91 @@ pub fn parse(filepath: &Path, setting: &Setting) {
                 }
                 ()
             }
-            _ => (),
+            Some(Token::RegularToken {
+                label,
+                start: false,
+            }) => {
+                println!(" + {}", label); // end of a code snippet.
+                end(label.to_string(), &mut coll);
+                if counter < no_lines {
+                    // Print ... but not at the end of the file.
+                    coll.get_mut(&label).unwrap().buffer.push_str("...\n");
+                }
+                ()
+            }
+            Some(Token::QuietToken { start: true }) => {
+                quiet = true; // start to omit output.
+                ()
+            }
+            Some(Token::QuietToken { start: false }) => {
+                quiet = false; // end omitting output.
+                ()
+            }
+
+            Some(Token::ExerciseToken { start: true }) => {
+                exercise_quiet = true; // start to omit output in exercise mod.
+                ()
+            }
+            Some(Token::ExerciseToken { start: false }) => {
+                exercise_quiet = false; // end omitting output in exercise mod.
+                ()
+            }
+            Some(Token::ReplaceToken {
+                s: text,
+                start: true,
+            }) => {
+                for r in coll.values_mut() {
+                    // all records
+                    if r.active {
+                        r.buffer.push_str(&text);
+                        r.buffer.push('\n');
+                    }
+                }
+                quiet = true; // prevents to output next line.
+                ()
+            },
+            Some(Token::ReplaceToken { s: _, start: false }) => {
+                quiet = false; // end marker, output is allowed again.
+                ()
+            },
+            Some(Token::ExerciseReplaceToken {
+                s: text,
+                start: true,
+            }) => {
+                if !exercise_env && !quiet {
+                    for r in coll.values_mut() {
+                        if r.active {
+                            r.buffer.push_str(&text);
+                            r.buffer.push('\n');
+                        }
+                    }
+                    quiet = true; // prevents to output next line.
+                    ()
+                }
+            },
+            Some(Token::ExerciseReplaceToken { s: _, start: false }) => {
+                quiet = false; // end marker, output is allowed again.
+                ()
+            },
+            _ => {
+                if !quiet && exercise_env || !exercise_quiet {
+                    // omit lines when in quiet mode.
+                    // Store line for every code snippet label...
+                    for r in coll.values_mut() {
+                        if r.active {
+                            r.buffer.push_str(&line);
+                            r.buffer.push('\n');
+                        }
+                    }
+                }
+                ()
+            }
         };
     }
 
-    end(DEFAULTLABEL.to_string(), &mut coll); // end default code snippet.
+    end(DEFAULTLABEL.to_string(), &mut coll)?; // end default code snippet.
     write_files();
+    Ok(())
 }
 
 fn is_comment_escape(text: &str, setting: &Setting) -> bool {
