@@ -15,7 +15,7 @@ pub fn parse(filepath: &Path, setting: &Setting) {
     // Output collector.
     // Key: a label taken from the annotated source code.
     // Values: text buffer to output.
-    let mut coll: HashMap<&str, Record> = HashMap::new();
+    let mut coll: HashMap<String, Record> = HashMap::new();
 
     let mut _quiet = false; // if true, lines are omitted.
     let mut _exercise_quiet = false; // if true, lines are not omitted.
@@ -24,7 +24,7 @@ pub fn parse(filepath: &Path, setting: &Setting) {
     // let no_lines = reader.lines().size_hint().0; // of the the source file
 
     // This is the default snippet extracting the whole source code.
-    start(DEFAULTLABEL, &mut coll);
+    start(DEFAULTLABEL.to_string(), &mut coll);
 
     // Read the file line by line using the lines() iterator from std::io::BufRead.
     for (index, line) in reader.lines().enumerate() {
@@ -34,15 +34,15 @@ pub fn parse(filepath: &Path, setting: &Setting) {
         println!("{}. {}", index + 1, line);
 
         counter += 1;
-        let x = match test_token(&line, &setting) {
+        let _x = match test_token(&line, &setting) {
             // see if this line is a token.
             Some(Token::RegularToken {
                 label: label,
                 start: true,
             }) => {
                 println!(" + {}", label); // begin of a code snippet.
-                // TODO next statement is illegal but needed
-                // start(label, &mut coll);
+                // label is moved into hash map:
+                start(label.to_string(), &mut coll);
                 if coll.get(label).unwrap().counter <= 1 && counter > 1 {
                     // Print ... but not at the beginning of the file
                     // or when ... was printed at the end of a code snippet.
@@ -54,7 +54,7 @@ pub fn parse(filepath: &Path, setting: &Setting) {
         };
     }
 
-    end(DEFAULTLABEL, &mut coll); // end default code snippet.
+    end(DEFAULTLABEL.to_string(), &mut coll); // end default code snippet.
     write_files();
 }
 
@@ -92,20 +92,20 @@ fn test_token<'a>(line: &'a str, setting: &'a Setting) -> Option<Token<'a>> {
     None
 }
 
-fn start<'a>(label: &'a str, coll: &mut HashMap<&'a str, Record>) {
-    if !coll.contains_key(label) {
+fn start(label: String, coll: &mut HashMap<String, Record>) {
+    if !coll.contains_key(&label) {
         coll.insert(label, Record::new(true));
     } else {
-        coll.get_mut(label).unwrap().active = true;
-        coll.get_mut(label).unwrap().counter += 1;
+        coll.get_mut(&label).unwrap().active = true;
+        coll.get_mut(&label).unwrap().counter += 1;
     }
 }
 
-fn end<'a>(label: &'a str, coll: &mut HashMap<&'a str, Record>) -> Result<(), String> {
-    if !coll.contains_key(label) {
+fn end(label: String, coll: &mut HashMap<String, Record>) -> Result<(), String> {
+    if !coll.contains_key(&label) {
         Result::Err("End without start.".to_string())
     } else {
-        coll.get_mut(label).unwrap().active = false;
+        coll.get_mut(&label).unwrap().active = false;
         Result::Ok(())
     }
 }
