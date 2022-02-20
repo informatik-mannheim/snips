@@ -11,6 +11,9 @@ const DEFAULTLABEL: &str = "x8gfz4hd"; // just a crazy string.
 pub fn parse(filepath: &Path, setting: &Setting) -> Result<(), String> {
     let file = File::open(filepath).unwrap();
     let reader = BufReader::new(&file);
+    // line counter
+    let no_lines = reader.lines().count(); // of the the source file
+    println!("nol: {}", no_lines);
 
     // Output collector.
     // Key: a label taken from the annotated source code.
@@ -21,21 +24,19 @@ pub fn parse(filepath: &Path, setting: &Setting) -> Result<(), String> {
     let mut exercise_quiet = false; // if true, lines are not omitted.
     let exercise_env = false; // if true, lines are not omitted.
 
-    let mut counter = 0;
-    // line counter
-    let no_lines = BufReader::new(&file).lines().size_hint().0; // of the the source file
-
     // This is the default snippet extracting the whole source code.
     start(DEFAULTLABEL.to_string(), &mut coll);
 
+    // TODO how to avoid reading the file twice?
+    let file = File::open(filepath).unwrap();
+    let reader = BufReader::new(&file);
     // Read the file line by line using the lines() iterator from std::io::BufRead.
-    for (index, line) in reader.lines().enumerate() {
+    for (counter, line) in reader.lines().enumerate() {
         let line = line.unwrap(); // Ignore errors.
 
         // Show the line and its number.
-        println!("{}. {}", index + 1, line);
+        println!("{}. {}", counter + 1, line);
 
-        counter += 1;
         let _ = match test_token(&line, &setting) {
             // see if this line is a token.
             Some(Token::RegularToken { label, start: true }) => {
@@ -53,7 +54,7 @@ pub fn parse(filepath: &Path, setting: &Setting) -> Result<(), String> {
                 label,
                 start: false,
             }) => {
-                println!(" + {}", label); // end of a code snippet.
+                println!(" - {}", label); // end of a code snippet.
                 end(label.to_string(), &mut coll);
                 if counter < no_lines {
                     // Print ... but not at the end of the file.
@@ -91,11 +92,11 @@ pub fn parse(filepath: &Path, setting: &Setting) -> Result<(), String> {
                 }
                 quiet = true; // prevents to output next line.
                 ()
-            },
+            }
             Some(Token::ReplaceToken { s: _, start: false }) => {
                 quiet = false; // end marker, output is allowed again.
                 ()
-            },
+            }
             Some(Token::ExerciseReplaceToken {
                 s: text,
                 start: true,
@@ -110,11 +111,11 @@ pub fn parse(filepath: &Path, setting: &Setting) -> Result<(), String> {
                     quiet = true; // prevents to output next line.
                     ()
                 }
-            },
+            }
             Some(Token::ExerciseReplaceToken { s: _, start: false }) => {
                 quiet = false; // end marker, output is allowed again.
                 ()
-            },
+            }
             _ => {
                 if !quiet && exercise_env || !exercise_quiet {
                     // omit lines when in quiet mode.
@@ -132,7 +133,7 @@ pub fn parse(filepath: &Path, setting: &Setting) -> Result<(), String> {
     }
 
     end(DEFAULTLABEL.to_string(), &mut coll)?; // end default code snippet.
-    write_files();
+    write_files(&coll);
     Ok(())
 }
 
@@ -146,7 +147,7 @@ fn is_comment_escape(text: &str, setting: &Setting) -> bool {
 
 fn test_token<'a>(line: &'a str, setting: &'a Setting) -> Option<Token> {
     // let line = line.clone();
-    let tokens: Vec<&str> = line.split_whitespace().collect();
+    let tokens: Vec<&str> = line.trim().split_whitespace().collect();
 
     if tokens.len() == 2 {
         if is_comment_escape(tokens[0], setting) && tokens[1] == "+OUT" {
@@ -231,7 +232,12 @@ fn end(label: String, coll: &mut HashMap<String, Record>) -> Result<(), String> 
     }
 }
 
-fn write_files() {}
+fn write_files(coll: &HashMap<String, Record>) {
+    for (label, record) in &*coll {
+        println!("\nFile {}", label);
+        println!("{}", record.buffer);
+    }
+}
 
 /// @param active  true if lines are printed.
 /// @param counter number of code snippets (until now)
