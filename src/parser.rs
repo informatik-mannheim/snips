@@ -30,8 +30,8 @@ pub fn parse(lines: &Vec<String>, setting: &Setting) -> Result<HashMap<String, R
 
     let mut quiet = false; // if true, lines are omitted.
     let mut exercise_quiet = false; // if true, lines are not omitted.
-                                    // TODO
-                                    // This is the default snippet extracting the whole source code.
+    // TODO
+    // This is the default snippet for extracting the whole source code.
     start(DEFAULTLABEL.to_string(), &mut coll);
 
     // Process line by line...
@@ -123,7 +123,7 @@ pub fn parse(lines: &Vec<String>, setting: &Setting) -> Result<HashMap<String, R
                 ()
             }
             _ => {
-                if !quiet && setting.exercise_solution || !exercise_quiet {
+                if !quiet && (setting.exercise_solution || !exercise_quiet) {
                     // omit lines when in quiet mode.
                     // Store line for every code snippet label...
                     for r in coll.values_mut() {
@@ -223,9 +223,10 @@ fn test_token<'a>(line: &'a str, setting: &'a Setting) -> Option<Token> {
             // Truncate first three tokens and fill them with spaces:
             let c: Vec<char> = (1..indent).into_iter().map(|_| ' ').collect();
             let mut spaces = String::from_iter(c);
-            let idx = tokens[0].len() + tokens[1].len() + tokens[2].len();
-            let t = &line[idx..];
-            spaces.push_str(t);
+            // Find rest of line:
+            let p = format!("{} {}", tokens[1], tokens[2]);
+            let idx = line.find(&p).unwrap() + p.chars().count();
+            spaces.push_str(&line[idx..]); // Add rest of line.
             return Some(Token::ExerciseReplaceToken {
                 s: spaces,
                 start: true,
@@ -320,13 +321,14 @@ enum Token {
 #[cfg(test)]
 mod tests {
     use crate::parser::parse;
+    use crate::parser::DEFAULTLABEL;
     use indoc::indoc;
 
     // use super::super::scan;
     use super::super::util::Setting;
     use std::path::Path;
 
-    fn doc_to_str(s: &str) -> Vec<String> {
+    fn str_to_vec(s: &str) -> Vec<String> {
         let lines = s.split("\n");
         let mut v = Vec::new();
         for z in lines {
@@ -349,20 +351,89 @@ mod tests {
     }
 
     #[test]
-    fn test_1() {
+    fn test_slide() {
         let s = indoc! {"
         public class Foo {
             public static void main(String[] args) {
-              // +IN Slide
-              int a = 1;
-              // -IN Slide
-              System.out.println(\"Value is \" + a);
+                // +IN Slide
+                int a = 1;
+                // -IN Slide
+                System.out.println(\"Value is \" + a);
             }
         }
         "};
-        let lines = doc_to_str(s);
+        let ok = "...\n        int a = 1;\n...\n";
+        let lines = str_to_vec(s);
         let coll = parse(&lines, &config()).unwrap();
+        let test = coll.get("Slide").unwrap().buffer.as_str();
         assert_eq!(coll.len(), 2);
-        // assert_eq!(coll.get("Slide").unwrap().buffer.len(), 3);
+        assert_eq!(test, ok);
+    }
+
+    #[test]
+    fn test_excsubst() {
+        let s = indoc! {"
+        public class Foo {
+          public static void main(String[] args) {
+            int a = 1;
+            // +EXCSUBST 4 // Your solution:
+            // This is the solution:
+            System.out.println(\"Value is \" + a);
+            // -EXCSUBST
+          }
+        }
+        "};
+        let ok = indoc! {"
+        public class Foo {
+          public static void main(String[] args) {
+            int a = 1;
+            // Your solution:
+          }
+        }
+
+        "};
+        // test produces an extra line, therefore this extra line.
+        let lines = str_to_vec(s);
+        let coll = parse(&lines, &config()).unwrap();
+        assert_eq!(coll.len(), 1);
+        let test = coll.get(DEFAULTLABEL).unwrap().buffer.as_str();
+        assert_eq!(test, ok);
+    }
+
+    #[test]
+    fn test_excsubst_solution() {
+        let mut config = config();
+        config.exercise_solution = true;
+        let s = indoc! {"
+        public class Foo {
+          public static void main(String[] args) {
+            int a = 1;
+            // +EXCSUBST 4 // Your solution:
+            // This is the solution:
+            System.out.println(\"Value is \" + a);
+            // -EXCSUBST
+          }
+        }
+        "};
+        let ok = indoc! {"
+        public class Foo {
+          public static void main(String[] args) {
+            int a = 1;
+            // This is the solution:
+            System.out.println(\"Value is \" + a);
+          }
+        }
+
+        "};
+        // test produces an extra line, therefore this extra line.
+        let lines = str_to_vec(s);
+        let coll = parse(&lines, &config).unwrap();
+        assert_eq!(coll.len(), 1);
+        let test = coll.get(DEFAULTLABEL).unwrap().buffer.as_str();
+        assert_eq!(test, ok);
+    }
+
+    #[test]
+    fn test_parse() {
     }
 }
