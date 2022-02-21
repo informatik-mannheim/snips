@@ -4,7 +4,7 @@ use crate::util::Setting;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 const DEFAULTLABEL: &str = "x8gfz4hd"; // just a crazy string.
 
@@ -13,7 +13,6 @@ pub fn parse(filepath: &Path, setting: &Setting) -> Result<(), String> {
     let reader = BufReader::new(&file);
     // line counter
     let no_lines = reader.lines().count(); // of the the source file
-    println!("nol: {}", no_lines);
 
     // Output collector.
     // Key: a label taken from the annotated source code.
@@ -35,13 +34,13 @@ pub fn parse(filepath: &Path, setting: &Setting) -> Result<(), String> {
         let line = line.unwrap(); // Ignore errors.
 
         // Show the line and its number.
-        println!("{}. {}", counter + 1, line);
+        // println!("{}. {}", counter + 1, line);
 
         let _ = match test_token(&line, &setting) {
             // see if this line is a token.
             Some(Token::RegularToken { label, start: true }) => {
-                println!(" + {}", label); // begin of a code snippet.
-                                          // label is moved into hash map:
+                println!("  + {}", label); // begin of a code snippet.
+                                           // label is moved into hash map:
                 start(label.to_string(), &mut coll);
                 if coll.get(&label).unwrap().counter <= 1 && counter > 1 {
                     // Print ... but not at the beginning of the file
@@ -54,7 +53,7 @@ pub fn parse(filepath: &Path, setting: &Setting) -> Result<(), String> {
                 label,
                 start: false,
             }) => {
-                println!(" - {}", label); // end of a code snippet.
+                println!("  - {}", label); // end of a code snippet.
                 end(label.to_string(), &mut coll);
                 if counter < no_lines {
                     // Print ... but not at the end of the file.
@@ -72,10 +71,12 @@ pub fn parse(filepath: &Path, setting: &Setting) -> Result<(), String> {
             }
 
             Some(Token::ExerciseToken { start: true }) => {
+                println!("  +EXC");
                 exercise_quiet = true; // start to omit output in exercise mod.
                 ()
             }
             Some(Token::ExerciseToken { start: false }) => {
+                println!("  -EXC");
                 exercise_quiet = false; // end omitting output in exercise mod.
                 ()
             }
@@ -97,10 +98,11 @@ pub fn parse(filepath: &Path, setting: &Setting) -> Result<(), String> {
                 quiet = false; // end marker, output is allowed again.
                 ()
             }
-            Some(Token::ExerciseReplaceToken {
+            Some(Token::ExerciseReplaceToken {                
                 s: text,
                 start: true,
             }) => {
+                println!("  +EXCSUBST");
                 if !exercise_env && !quiet {
                     for r in coll.values_mut() {
                         if r.active {
@@ -113,6 +115,7 @@ pub fn parse(filepath: &Path, setting: &Setting) -> Result<(), String> {
                 }
             }
             Some(Token::ExerciseReplaceToken { s: _, start: false }) => {
+                println!("  -EXCSUBST");
                 quiet = false; // end marker, output is allowed again.
                 ()
             }
@@ -133,7 +136,7 @@ pub fn parse(filepath: &Path, setting: &Setting) -> Result<(), String> {
     }
 
     end(DEFAULTLABEL.to_string(), &mut coll)?; // end default code snippet.
-    write_files(&coll);
+    write_files(filepath, &coll, setting);
     Ok(())
 }
 
@@ -163,7 +166,10 @@ fn test_token<'a>(line: &'a str, setting: &'a Setting) -> Option<Token> {
             return Some(Token::ExerciseToken { start: false });
         }
         if is_comment_escape(tokens[0], setting) && tokens[1] == "-EXCSUBST" {
-            return Some(Token::ExerciseToken { start: false });
+            return Some(Token::ExerciseReplaceToken {
+                s: "".to_string(),
+                start: false,
+            });
         }
         if is_comment_escape(tokens[0], setting) && tokens[1] == "-HEADER" {
             return Some(Token::ReplaceToken {
@@ -210,6 +216,20 @@ fn test_token<'a>(line: &'a str, setting: &'a Setting) -> Option<Token> {
                 start: true,
             });
         }
+        // TODO redundant to previous section.
+        if is_comment_escape(tokens[0], setting) && tokens[1] == "+EXCSUBST" {
+            let indent: i32 = tokens[2].parse().unwrap();
+            // Truncate first three tokens and fill them with spaces:
+            let c: Vec<char> = (1..indent).into_iter().map(|_| ' ').collect();
+            let mut spaces = String::from_iter(c);
+            let idx = tokens[0].len() + tokens[1].len() + tokens[2].len();
+            let t = &line[idx..];
+            spaces.push_str(t);
+            return Some(Token::ExerciseReplaceToken {
+                s: spaces,
+                start: true,
+            });
+        }
     }
     None
 }
@@ -232,11 +252,37 @@ fn end(label: String, coll: &mut HashMap<String, Record>) -> Result<(), String> 
     }
 }
 
-fn write_files(coll: &HashMap<String, Record>) {
+fn write_files(filepath: &Path, coll: &HashMap<String, Record>, setting: &Setting) {
     for (label, record) in &*coll {
-        println!("\nFile {}", label);
-        println!("{}", record.buffer);
+        // println!("\nFile {}", label);
+        // println!("{}", record.buffer);
+
+        let filename = filepath.file_stem().unwrap();
+        let suffix = filepath.extension().unwrap();
+
+        if label == DEFAULTLABEL {
+            let mut file1 = PathBuf::new();
+            file1.push(setting.snippet_target_dir);
+            file1.push(filepath.file_name().unwrap());
+            write_file(&file1, record);
+            // write_file(srcTargetDir + "/" + file.getName);
+        } else {
+            let mut path = PathBuf::new();
+            path.push(setting.snippet_target_dir);
+            let mut ext_filename = String::new();
+            ext_filename.push_str(&filename.to_str().unwrap());
+            ext_filename.push_str("_");
+            ext_filename.push_str(&label);
+            ext_filename.push_str(".");
+            ext_filename.push_str(suffix.to_str().unwrap());
+            path.push(&ext_filename);
+            write_file(&path, record);
+        }
     }
+}
+
+fn write_file(filepath: &Path, record: &Record) {
+    std::fs::write(filepath, record.buffer.as_str()).expect("Unable to write file");
 }
 
 /// @param active  true if lines are printed.
@@ -294,7 +340,7 @@ mod tests {
 
     #[test]
     fn it_works() {
-        use std::path::{Path, PathBuf};
+        use std::path::PathBuf;
 
         let setting = config();
         let mut path = PathBuf::new();

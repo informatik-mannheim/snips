@@ -24,7 +24,7 @@ fn main() {
         .arg(
             Arg::new("src_target_dir")
                 .short('d')
-                .default_value("./snippet_src")
+                .default_value("./src_dest")
                 .help("Directory where stripped source files will be stored."),
         )
         .arg(Arg::new("file_suffix").short('x').default_value(".txt"))

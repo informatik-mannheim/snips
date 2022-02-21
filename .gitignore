@@ -1,6 +1,9 @@
 /target
 Cargo.lock
+.vscode/launch.json
 tests/testfiles/snippetsPublicTarget
 tests/testfiles/snippetsSolutionTarget
 tests/testfiles/srcPublicTarget
 tests/testfiles/srcSolutionTarget
+tests/testfiles/src_dest
+tests/testfiles/snippets
