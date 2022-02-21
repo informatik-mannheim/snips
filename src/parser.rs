@@ -15,10 +15,7 @@ pub fn parse_write(filepath: &Path, setting: &Setting) -> Result<(), String> {
     let lines: Vec<String> = reader.lines().map(|e| e.unwrap()).collect();
 
     // Parse the content of the file:
-    let coll = match parse(&lines, setting) {
-        Ok(coll) => coll,
-        _ => return Err("Internal error".to_string()),
-    };
+    let coll = parse(&lines, setting)?;
     write_files(filepath, &coll, setting);
     Ok(())
 }
@@ -34,7 +31,7 @@ pub fn parse(lines: &Vec<String>, setting: &Setting) -> Result<HashMap<String, R
     let mut quiet = false; // if true, lines are omitted.
     let mut exercise_quiet = false; // if true, lines are not omitted.
                                     // TODO
-    // This is the default snippet extracting the whole source code.
+                                    // This is the default snippet extracting the whole source code.
     start(DEFAULTLABEL.to_string(), &mut coll);
 
     // Process line by line...
@@ -322,12 +319,21 @@ enum Token {
 
 #[cfg(test)]
 mod tests {
-
     use crate::parser::parse;
+    use indoc::indoc;
 
     // use super::super::scan;
     use super::super::util::Setting;
     use std::path::Path;
+
+    fn doc_to_str(s: &str) -> Vec<String> {
+        let lines = s.split("\n");
+        let mut v = Vec::new();
+        for z in lines {
+            v.push(z.to_string());
+        }
+        v
+    }
 
     fn config() -> Setting<'static> {
         // Path is relative to project root.
@@ -343,14 +349,20 @@ mod tests {
     }
 
     #[test]
-    fn it_works() {
-        use std::path::PathBuf;
-
-        let setting = config();
-        let mut path = PathBuf::new();
-        path.push(setting.src_dir);
-        path.push("Testfile_IN_Slide.java");
-        parse(&path.as_path(), &setting);
-        assert_eq!(true, true);
+    fn test_1() {
+        let s = indoc! {"
+        public class Foo {
+            public static void main(String[] args) {
+              // +IN Slide
+              int a = 1;
+              // -IN Slide
+              System.out.println(\"Value is \" + a);
+            }
+        }
+        "};
+        let lines = doc_to_str(s);
+        let coll = parse(&lines, &config()).unwrap();
+        assert_eq!(coll.len(), 2);
+        // assert_eq!(coll.get("Slide").unwrap().buffer.len(), 3);
     }
 }
