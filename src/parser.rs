@@ -8,11 +8,23 @@ use std::path::{Path, PathBuf};
 
 const DEFAULTLABEL: &str = "x8gfz4hd"; // just a crazy string.
 
-pub fn parse(filepath: &Path, setting: &Setting) -> Result<(), String> {
+pub fn parse_write(filepath: &Path, setting: &Setting) -> Result<(), String> {
+    // Make vector with lines in text file:
     let file = File::open(filepath).unwrap();
     let reader = BufReader::new(&file);
-    // line counter
-    let no_lines = reader.lines().count(); // of the the source file
+    let lines: Vec<String> = reader.lines().map(|e| e.unwrap()).collect();
+
+    // Parse the content of the file:
+    let coll = match parse(&lines, setting) {
+        Ok(coll) => coll,
+        _ => return Err("Internal error".to_string()),
+    };
+    write_files(filepath, &coll, setting);
+    Ok(())
+}
+
+pub fn parse(lines: &Vec<String>, setting: &Setting) -> Result<HashMap<String, Record>, String> {
+    let no_lines = lines.len(); // of the the source file
 
     // Output collector.
     // Key: a label taken from the annotated source code.
@@ -21,18 +33,12 @@ pub fn parse(filepath: &Path, setting: &Setting) -> Result<(), String> {
 
     let mut quiet = false; // if true, lines are omitted.
     let mut exercise_quiet = false; // if true, lines are not omitted.
-    let exercise_env = false; // if true, lines are not omitted.
-
+                                    // TODO
     // This is the default snippet extracting the whole source code.
     start(DEFAULTLABEL.to_string(), &mut coll);
 
-    // TODO how to avoid reading the file twice?
-    let file = File::open(filepath).unwrap();
-    let reader = BufReader::new(&file);
-    // Read the file line by line using the lines() iterator from std::io::BufRead.
-    for (counter, line) in reader.lines().enumerate() {
-        let line = line.unwrap(); // Ignore errors.
-
+    // Process line by line...
+    for (counter, line) in lines.iter().enumerate() {
         // Show the line and its number.
         // println!("{}. {}", counter + 1, line);
 
@@ -98,12 +104,12 @@ pub fn parse(filepath: &Path, setting: &Setting) -> Result<(), String> {
                 quiet = false; // end marker, output is allowed again.
                 ()
             }
-            Some(Token::ExerciseReplaceToken {                
+            Some(Token::ExerciseReplaceToken {
                 s: text,
                 start: true,
             }) => {
                 println!("  +EXCSUBST");
-                if !exercise_env && !quiet {
+                if !setting.exercise_solution && !quiet {
                     for r in coll.values_mut() {
                         if r.active {
                             r.buffer.push_str(&text);
@@ -120,7 +126,7 @@ pub fn parse(filepath: &Path, setting: &Setting) -> Result<(), String> {
                 ()
             }
             _ => {
-                if !quiet && exercise_env || !exercise_quiet {
+                if !quiet && setting.exercise_solution || !exercise_quiet {
                     // omit lines when in quiet mode.
                     // Store line for every code snippet label...
                     for r in coll.values_mut() {
@@ -134,17 +140,15 @@ pub fn parse(filepath: &Path, setting: &Setting) -> Result<(), String> {
             }
         };
     }
-
     end(DEFAULTLABEL.to_string(), &mut coll)?; // end default code snippet.
-    write_files(filepath, &coll, setting);
-    Ok(())
+    Ok(coll)
 }
 
 fn is_comment_escape(text: &str, setting: &Setting) -> bool {
-    if setting.comment_escape2 == "" {
-        text == setting.comment_escape // only one escape comment
+    if setting.comment_alternative == "" {
+        text == setting.comment // only one escape comment
     } else {
-        text == setting.comment_escape || text == setting.comment_escape2
+        text == setting.comment || text == setting.comment_alternative
     }
 }
 
@@ -216,7 +220,7 @@ fn test_token<'a>(line: &'a str, setting: &'a Setting) -> Option<Token> {
                 start: true,
             });
         }
-        // TODO redundant to previous section.
+        // TODO almost redundant to previous section.
         if is_comment_escape(tokens[0], setting) && tokens[1] == "+EXCSUBST" {
             let indent: i32 = tokens[2].parse().unwrap();
             // Truncate first three tokens and fill them with spaces:
@@ -262,13 +266,13 @@ fn write_files(filepath: &Path, coll: &HashMap<String, Record>, setting: &Settin
 
         if label == DEFAULTLABEL {
             let mut file1 = PathBuf::new();
-            file1.push(setting.snippet_target_dir);
+            file1.push(setting.snippet_dest_dir);
             file1.push(filepath.file_name().unwrap());
             write_file(&file1, record);
             // write_file(srcTargetDir + "/" + file.getName);
         } else {
             let mut path = PathBuf::new();
-            path.push(setting.snippet_target_dir);
+            path.push(setting.snippet_dest_dir);
             let mut ext_filename = String::new();
             ext_filename.push_str(&filename.to_str().unwrap());
             ext_filename.push_str("_");
@@ -288,7 +292,7 @@ fn write_file(filepath: &Path, record: &Record) {
 /// @param active  true if lines are printed.
 /// @param counter number of code snippets (until now)
 /// @param buffer  buffer to collect the output text.
-struct Record {
+pub struct Record {
     pub active: bool,
     pub counter: i32,
     pub buffer: String,
@@ -310,7 +314,7 @@ enum Token {
     RegularToken { label: String, start: bool },     // +/-IN
     QuietToken { start: bool },                      // +/-OUT
     ExerciseToken { start: bool },                   // +/-EXC
-    ReplaceToken { s: String, start: bool },         //
+    ReplaceToken { s: String, start: bool },         // +/-VAR
     ExerciseReplaceToken { s: String, start: bool }, // +/-EXCSUBST
 }
 
@@ -329,12 +333,12 @@ mod tests {
         // Path is relative to project root.
         Setting {
             src_dir: Path::new("tests/testfiles/src"),
-            snippet_target_dir: Path::new("tests/testfiles/snippets"),
-            src_target_dir: Path::new("tests/testfiles/src_dest"),
+            snippet_dest_dir: Path::new("tests/testfiles/snippets"),
+            src_dest_dir: Path::new("tests/testfiles/src_dest"),
             file_suffix: ".java",
-            comment_escape: "//",
-            comment_escape2: "#",
-            exercise_env: false,
+            comment: "//",
+            comment_alternative: "#",
+            exercise_solution: false,
         }
     }
 

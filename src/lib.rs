@@ -2,7 +2,7 @@
 pub mod parser;
 pub mod util;
 
-use crate::parser::parse;
+use crate::parser::parse_write;
 use crate::util::Setting;
 use std::fs;
 use std::io;
@@ -46,7 +46,7 @@ fn scan_rec(dir: &Path, suffix_path: &str, setting: &Setting) -> io::Result<()> 
                 if filename.ends_with(setting.file_suffix) {
                     // Process file:
                     println!(" {}", path.display());
-                    parse(path.as_path(), setting);
+                    parse_write(path.as_path(), setting);
                 } else {
                     println!(" skipped {}", path.display());
                 }
@@ -69,12 +69,12 @@ mod tests {
         // Path is relative to project root.
         Setting {
             src_dir: Path::new("tests/testfiles/src"),
-            snippet_target_dir: Path::new("tests/testfiles/snippets"),
-            src_target_dir: Path::new("tests/testfiles/src_dest"),
+            snippet_dest_dir: Path::new("tests/testfiles/snippets"),
+            src_dest_dir: Path::new("tests/testfiles/src_dest"),
             file_suffix: ".java",
-            comment_escape: "//",
-            comment_escape2: "#",
-            exercise_env: false,
+            comment: "//",
+            comment_alternative: "#",
+            exercise_solution: false,
         }
     }
 
