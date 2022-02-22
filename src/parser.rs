@@ -2,9 +2,10 @@
 
 // Issues: none
 
+use std::collections::HashMap;
+use log::{debug, trace};
 use crate::util::Setting;
 use crate::DEFAULTLABEL;
-use std::collections::HashMap;
 
 /// Parse a vector of text lines (`lines`) and extract snippets.
 /// The environment is specified in `setting`.
@@ -36,13 +37,13 @@ pub fn parse(lines: &Vec<&str>, setting: &Setting) -> Result<HashMap<String, Rec
         let line_no = counter + 1; // counter starts at 0.
 
         // Show the line and its number.
-        // println!("{}. {}", counter + 1, line);
+        trace!("{}. {}", counter + 1, line);
 
         // Parse the next token:
         let _ = match read_token(&line, &setting) {
             // see if this line is a token.
             Some(Token::RegularToken { label, start: true }) => {
-                println!("  + {}", label); // begin of a code snippet.
+                debug!("  +IN {}", label); // begin of a code snippet.
                                            // label is moved into hash map:
                 start(label.to_string(), &mut coll);
                 if coll.get(&label).unwrap().counter <= 1 && line_no > 1 {
@@ -56,7 +57,7 @@ pub fn parse(lines: &Vec<&str>, setting: &Setting) -> Result<HashMap<String, Rec
                 label,
                 start: false,
             }) => {
-                println!("  - {}", label); // end of a code snippet.
+                debug!("  -IN {}", label); // end of a code snippet.
                 end(label.to_string(), &mut coll)?;
                 if line_no < no_lines {
                     // Print ... but not at the end of the file.
@@ -81,7 +82,7 @@ pub fn parse(lines: &Vec<&str>, setting: &Setting) -> Result<HashMap<String, Rec
                 ()
             }
             Some(Token::ExerciseToken { start: true }) => {
-                println!("  +EXC");
+                debug!("  +EXC");
                 if mode.exc {
                     return Err(format!("Line {}: Another +EXC", line_no));
                 }
@@ -90,7 +91,7 @@ pub fn parse(lines: &Vec<&str>, setting: &Setting) -> Result<HashMap<String, Rec
                 ()
             }
             Some(Token::ExerciseToken { start: false }) => {
-                println!("  -EXC");
+                debug!("  -EXC");
                 if !mode.exc {
                     return Err(format!("Line {}: -EXC without preceding +EXC", line_no));
                 }
@@ -128,7 +129,7 @@ pub fn parse(lines: &Vec<&str>, setting: &Setting) -> Result<HashMap<String, Rec
                 s: text,
                 start: true,
             }) => {
-                println!("  +EXCSUBST");
+                debug!("  +EXCSUBST");
                 if mode.excsubst {
                     return Err(format!("Line {}: Another +EXCSUBST", line_no));
                 }
@@ -144,7 +145,7 @@ pub fn parse(lines: &Vec<&str>, setting: &Setting) -> Result<HashMap<String, Rec
                 }
             }
             Some(Token::ExerciseReplaceToken { s: _, start: false }) => {
-                println!("  -EXCSUBST");
+                debug!("  -EXCSUBST");
                 if !mode.excsubst {
                     return Err(format!(
                         "Line {}: -EXCSUBST without preceding +EXCSUBST",

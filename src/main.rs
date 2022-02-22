@@ -1,7 +1,8 @@
 use clap::{Arg, Command};
-use std::path::Path;
+use log::*;
 use snips::scan;
 use snips::util::Setting;
+use std::path::Path;
 
 fn main() {
     // https://rust-lang-nursery.github.io/rust-cookbook/cli/arguments.html
@@ -51,6 +52,12 @@ fn main() {
                 .default_value("false")
                 .help("Include solutions (EXC and EXCSUBST flags)"),
         )
+        .arg(
+            Arg::new("verbosity")
+                .short('v')
+                .multiple_occurrences(true)
+                .help("Increase message verbosity"),
+        )
         .after_help(
             "Extract parts (snippets) of source code or text in general \
                  and copy the stripped files. Useful for source code \
@@ -72,8 +79,19 @@ fn main() {
             .unwrap(),
     };
 
+    let verbose = args.occurrences_of("verbosity") as usize;
+
+    stderrlog::new()
+        .module(module_path!())
+        .quiet(false)
+        .verbosity(verbose + 1) // Skip ERROR level
+        // .timestamp(ts)
+        .show_level(false) // no INFO or DEBUG prefixes
+        .init()
+        .unwrap();
+
     if let Err(e) = scan(setting) {
-        println!("Error: snips failed.");
-        println!("{}", e);
+        error!("Error: snips failed.");
+        error!("{}", e);
     }
 }

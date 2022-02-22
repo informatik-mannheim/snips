@@ -10,6 +10,7 @@ use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
+use log::{info, debug};
 
 pub const DEFAULTLABEL: &str = "x8gfz4hd"; // just a crazy string.
 
@@ -37,7 +38,7 @@ pub fn scan(setting: Setting) -> Result<(), String> {
 
     // Verify that snips directory is available:
     if !setting.snippet_dest_dir.is_dir() {
-        println!(
+        info!(
             "Create snips destination directory: {}",
             &setting.snippet_dest_dir.display()
         );
@@ -52,7 +53,7 @@ pub fn scan(setting: Setting) -> Result<(), String> {
 
     // Verify that src_dest directory is available:
     if !setting.src_dest_dir.is_dir() {
-        println!(
+        info!(
             "Create source destination directory: {}",
             &setting.src_dest_dir.display()
         );
@@ -65,11 +66,11 @@ pub fn scan(setting: Setting) -> Result<(), String> {
         }
     }
 
-    println!("Scanning...");
+    info!("Scanning...");
     if let Err(e) = scan_rec(&setting.src_dir, &setting.src_dest_dir, &setting) {
         return Err(format!("Scanning files failed with error: {}", e));
     }
-    println!("... done");
+    info!("... done");
     Ok(())
 }
 
@@ -77,7 +78,7 @@ pub fn scan(setting: Setting) -> Result<(), String> {
 /// `dir_path` is the path of directories starting from src directory.
 /// `setting` contains the environment for the scan.
 fn scan_rec(dir: &Path, dir_path: &Path, setting: &Setting) -> Result<(), String> {
-    println!(" {}", dir.display());
+    debug!(" {}", dir.display());
 
     // Recursively scan other directories:
     for entry in fs::read_dir(dir).unwrap() {
@@ -103,10 +104,10 @@ fn scan_rec(dir: &Path, dir_path: &Path, setting: &Setting) -> Result<(), String
             if let Some(filename) = next_dir.to_str() {
                 if filename.ends_with(setting.file_suffix) {
                     // Process file:
-                    println!(" {}", next_dir.display());
+                    info!(" {}", next_dir.display());
                     parse_write(next_dir.as_path(), &dir_path, setting)?;
                 } else {
-                    println!(" skipped {}", next_dir.display());
+                    info!(" skipped {}", next_dir.display());
                 }
             }
         }
