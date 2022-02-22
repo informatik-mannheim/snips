@@ -515,6 +515,5 @@ mod tests {
             r,
             Err("Line 2: -EXCSUBST without preceding +EXCSUBST".to_string())
         );
-        // assert_eq!(r, Ok(_);
     }
 }

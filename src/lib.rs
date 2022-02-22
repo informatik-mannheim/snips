@@ -6,13 +6,13 @@ pub mod util;
 use crate::file::write_files;
 use crate::parser::parse;
 use crate::util::Setting;
+use log::{debug, info, warn};
 use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
-use log::{info, debug};
 
-pub const DEFAULTLABEL: &str = "x8gfz4hd"; // just a crazy string.
+pub const DEFAULTLABEL: &str = "x8gfz4hd"; // crazy string as in ID for default label
 
 pub fn scan(setting: Setting) -> Result<(), String> {
     // val mode = if (exerciseEnv) "(mode EXC) " else ""
@@ -38,7 +38,7 @@ pub fn scan(setting: Setting) -> Result<(), String> {
 
     // Verify that snips directory is available:
     if !setting.snippet_dest_dir.is_dir() {
-        info!(
+        warn!(
             "Create snips destination directory: {}",
             &setting.snippet_dest_dir.display()
         );
@@ -53,7 +53,7 @@ pub fn scan(setting: Setting) -> Result<(), String> {
 
     // Verify that src_dest directory is available:
     if !setting.src_dest_dir.is_dir() {
-        info!(
+        warn!(
             "Create source destination directory: {}",
             &setting.src_dest_dir.display()
         );
@@ -99,7 +99,6 @@ fn scan_rec(dir: &Path, dir_path: &Path, setting: &Setting) -> Result<(), String
             }
             scan_rec(&next_dir, &ext_dir_path, setting)?;
         } else {
-            // TODO consider path.extension()
             // Test if file matches suffix:
             if let Some(filename) = next_dir.to_str() {
                 if filename.ends_with(setting.file_suffix) {
@@ -107,6 +106,7 @@ fn scan_rec(dir: &Path, dir_path: &Path, setting: &Setting) -> Result<(), String
                     info!(" {}", next_dir.display());
                     parse_write(next_dir.as_path(), &dir_path, setting)?;
                 } else {
+                    // TODO skip or just copy...?
                     info!(" skipped {}", next_dir.display());
                 }
             }

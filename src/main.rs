@@ -13,7 +13,8 @@ fn main() {
         .arg(
             Arg::new("src_dir")
                 .short('s')
-                .default_value(".")
+                .required(true)
+                .takes_value(true)
                 .help("Directory with source files."),
         )
         .arg(
@@ -56,7 +57,7 @@ fn main() {
             Arg::new("verbosity")
                 .short('v')
                 .multiple_occurrences(true)
-                .help("Increase message verbosity"),
+                .help("Add this flag multiple times to increase message verbosity"),
         )
         .after_help(
             "Extract parts (snippets) of source code or text in general \

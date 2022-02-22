@@ -6,6 +6,7 @@ use crate::DEFAULTLABEL;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
+use log::{trace};
 
 /// Write all snippets collected in `coll` to their files.
 /// `filepath` is the file to write.
@@ -22,7 +23,8 @@ pub fn write_files(
         // println!("\nFile {}", label);
         // println!("{}", record.buffer);
 
-        let filename = filepath.file_stem().unwrap();
+        let filename = filepath.file_name().unwrap();
+        let filestem = filepath.file_stem().unwrap();
         let suffix = filepath.extension().unwrap();
 
         if label == DEFAULTLABEL {
@@ -36,10 +38,11 @@ pub fn write_files(
             // Insert label into file's name:
             let ext_filename = format!(
                 "{}_{}.{}",
-                filename.to_str().unwrap(),
+                filestem.to_str().unwrap(),
                 label,
                 suffix.to_str().unwrap()
             );
+            trace!("Write file: {}", ext_filename);
             let file = setting.snippet_dest_dir.join(ext_filename);
             write_file(&file, record);
         }
