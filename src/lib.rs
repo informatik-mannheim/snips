@@ -1,15 +1,15 @@
 // lib
-pub mod parser;
 pub mod file;
+pub mod parser;
 pub mod util;
 
-use std::io::{BufReader, BufRead};
+use crate::file::write_files;
+use crate::parser::parse;
+use crate::util::Setting;
 use std::fs;
 use std::fs::File;
+use std::io::{BufRead, BufReader};
 use std::path::Path;
-use crate::parser::parse;
-use crate::file::write_files;
-use crate::util::Setting;
 
 pub const DEFAULTLABEL: &str = "x8gfz4hd"; // just a crazy string.
 
@@ -63,7 +63,7 @@ pub fn scan(setting: Setting) -> Result<(), String> {
                 e
             ));
         }
-    }    
+    }
 
     println!("Scanning...");
     if let Err(e) = scan_rec(&setting.src_dir, &setting.src_dest_dir, &setting) {
@@ -118,7 +118,8 @@ pub fn parse_write(filepath: &Path, dir_path: &Path, setting: &Setting) -> Resul
     // Make vector of the lines in the text file:
     let file = File::open(filepath).unwrap();
     let reader = BufReader::new(&file);
-    let lines: Vec<String> = reader.lines().map(|e| e.unwrap()).collect();
+    let v: Vec<String> = reader.lines().map(|e| e.unwrap()).collect();
+    let lines: Vec<&str> = v.iter().map(|s| s as &str).collect();
 
     // Parse the content of the file:
     let coll = parse(&lines, setting)?;

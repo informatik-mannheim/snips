@@ -5,3 +5,4 @@ Cargo.lock
 .vscode/launch.json
 tests/testfiles/public
 tests/testfiles/solution
+.vscode/settings.json

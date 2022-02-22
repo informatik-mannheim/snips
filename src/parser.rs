@@ -2,16 +2,16 @@
 
 // Issues: none
 
-use std::collections::HashMap;
-use crate::DEFAULTLABEL;
 use crate::util::Setting;
+use crate::DEFAULTLABEL;
+use std::collections::HashMap;
 
 /// Parse a vector of text lines (`lines`) and extract snippets.
 /// The environment is specified in `setting`.
 /// The snippets are returned in a hash map where the keys
 /// are the snippet labels and the processed text file is contained
 /// as the `Record` value.
-pub fn parse(lines: &Vec<String>, setting: &Setting) -> Result<HashMap<String, Record>, String> {
+pub fn parse(lines: &Vec<&str>, setting: &Setting) -> Result<HashMap<String, Record>, String> {
     let no_lines = lines.len(); // of the the source file
     let mut mode = Mode {
         out: false,
@@ -27,7 +27,8 @@ pub fn parse(lines: &Vec<String>, setting: &Setting) -> Result<HashMap<String, R
 
     let mut quiet = false; // if true, lines are omitted.
     let mut exercise_quiet = false; // if true, lines are not omitted.
-                                    // This is the default snippet for extracting the whole source code.
+
+    // This is the default snippet for extracting the whole source code.
     start(DEFAULTLABEL.to_string(), &mut coll);
 
     // Process line by line...
@@ -135,8 +136,7 @@ pub fn parse(lines: &Vec<String>, setting: &Setting) -> Result<HashMap<String, R
                 if !setting.exercise_solution && !quiet {
                     for r in coll.values_mut() {
                         if r.active {
-                            r.buffer.push_str(&text);
-                            r.buffer.push('\n');
+                            r.buffer.push_str(&format!("{}\n", &text));
                         }
                     }
                     quiet = true; // prevents to output next line.
@@ -174,19 +174,20 @@ pub fn parse(lines: &Vec<String>, setting: &Setting) -> Result<HashMap<String, R
     Ok(coll)
 }
 
-/// Test if `text` is an escape comment according to
-/// the settings as specified in `setting`.
-fn is_comment_escape(text: &str, setting: &Setting) -> bool {
-    if setting.comment_alternative == "" {
-        text == setting.comment // only one escape comment
-    } else {
-        text == setting.comment || text == setting.comment_alternative
-    }
-}
-
 /// Read the next token in the text file's `line`.
 /// The environment is controlled by `setting`:
 fn read_token<'a>(line: &'a str, setting: &'a Setting) -> Option<Token> {
+
+    // Test if `text` is an escape comment according to
+    // the settings as specified in `setting`.
+    let is_comment_escape = |text: &str| {
+        if setting.comment_alternative == "" {
+            text == setting.comment // only one escape comment
+        } else {
+            text == setting.comment || text == setting.comment_alternative
+        }
+    };
+
     // let line = line.clone();
     let tokens: Vec<&str> = line.trim().split_whitespace().collect();
 
@@ -208,31 +209,31 @@ fn read_token<'a>(line: &'a str, setting: &'a Setting) -> Option<Token> {
     };
 
     if tokens.len() == 2 {
-        if is_comment_escape(tokens[0], setting) && tokens[1] == "+OUT" {
+        if is_comment_escape(tokens[0]) && tokens[1] == "+OUT" {
             return Some(Token::QuietToken { start: true });
         }
-        if is_comment_escape(tokens[0], setting) && tokens[1] == "-OUT" {
+        if is_comment_escape(tokens[0]) && tokens[1] == "-OUT" {
             return Some(Token::QuietToken { start: false });
         }
-        if is_comment_escape(tokens[0], setting) && tokens[1] == "+EXC" {
+        if is_comment_escape(tokens[0]) && tokens[1] == "+EXC" {
             return Some(Token::ExerciseToken { start: true });
         }
-        if is_comment_escape(tokens[0], setting) && tokens[1] == "-EXC" {
+        if is_comment_escape(tokens[0]) && tokens[1] == "-EXC" {
             return Some(Token::ExerciseToken { start: false });
         }
-        if is_comment_escape(tokens[0], setting) && tokens[1] == "-EXCSUBST" {
+        if is_comment_escape(tokens[0]) && tokens[1] == "-EXCSUBST" {
             return Some(Token::ExerciseReplaceToken {
                 s: "".to_string(),
                 start: false,
             });
         }
-        if is_comment_escape(tokens[0], setting) && tokens[1] == "-HEADER" {
+        if is_comment_escape(tokens[0]) && tokens[1] == "-HEADER" {
             return Some(Token::ReplaceToken {
                 s: "".to_string(),
                 start: false,
             });
         }
-        if is_comment_escape(tokens[0], setting) && tokens[1] == "-VAR" {
+        if is_comment_escape(tokens[0]) && tokens[1] == "-VAR" {
             return Some(Token::ReplaceToken {
                 s: "".to_string(),
                 start: false,
@@ -241,30 +242,30 @@ fn read_token<'a>(line: &'a str, setting: &'a Setting) -> Option<Token> {
     }
 
     if tokens.len() >= 3 {
-        if is_comment_escape(tokens[0], setting) && tokens[1] == "+IN" {
+        if is_comment_escape(tokens[0]) && tokens[1] == "+IN" {
             return Some(Token::RegularToken {
                 label: tokens[2].to_string(),
                 start: true,
             });
         }
-        if is_comment_escape(tokens[0], setting) && tokens[1] == "-IN" {
+        if is_comment_escape(tokens[0]) && tokens[1] == "-IN" {
             return Some(Token::RegularToken {
                 label: tokens[2].to_string(),
                 start: false,
             });
         }
-        if is_comment_escape(tokens[0], setting) && tokens[1] == "+HEADER" {
+        if is_comment_escape(tokens[0]) && tokens[1] == "+HEADER" {
             let idx = tokens[0].len() + tokens[1].len(); // Truncate first letters.
             let s = line[idx..].to_string();
             return Some(Token::ReplaceToken { s: s, start: true });
         }
-        if is_comment_escape(tokens[0], setting) && tokens[1] == "+VAR" {
+        if is_comment_escape(tokens[0]) && tokens[1] == "+VAR" {
             return Some(Token::ReplaceToken {
                 s: rest_of_line(),
                 start: true,
             });
         }
-        if is_comment_escape(tokens[0], setting) && tokens[1] == "+EXCSUBST" {
+        if is_comment_escape(tokens[0]) && tokens[1] == "+EXCSUBST" {
             return Some(Token::ExerciseReplaceToken {
                 s: rest_of_line(),
                 start: true,
@@ -285,10 +286,10 @@ fn start(label: String, coll: &mut HashMap<String, Record>) {
 
 fn end(label: String, coll: &mut HashMap<String, Record>) -> Result<(), String> {
     if !coll.contains_key(&label) {
-        Result::Err(format!("End (-) without start (+) for label: {}", label))
+        Err(format!("End (-) without start (+) for label: {}", label))
     } else {
         coll.get_mut(&label).unwrap().active = false;
-        Result::Ok(())
+        Ok(())
     }
 }
 
@@ -339,16 +340,7 @@ mod tests {
     use indoc::indoc;
     use std::path::Path;
 
-    fn str_to_vec(s: &str) -> Vec<String> {
-        let lines = s.split("\n");
-        let mut v = Vec::new();
-        for z in lines {
-            v.push(z.to_string());
-        }
-        v
-    }
-
-    fn str_to_vec2(s: &str) -> Vec<&str> {
+    fn str_to_vec(s: &str) -> Vec<&str> {
         s.split("\n").collect()
     }
 

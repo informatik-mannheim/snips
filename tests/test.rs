@@ -44,7 +44,7 @@ mod tests {
   #[test]
   fn scan_new_dirs_solution() {
       // TODO
-      let setting = solution_config();
+      let _setting = solution_config();
       // scan(setting);
       assert_eq!(true, true);
   }  
