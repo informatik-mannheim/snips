@@ -1,4 +1,6 @@
 /target
+/doc
+/tmp
 Cargo.lock
 .vscode/launch.json
 tests/testfiles/public

@@ -5,12 +5,14 @@ pub mod util;
 use crate::parser::parse_write;
 use crate::util::Setting;
 use std::fs;
-use std::io;
 use std::path::Path;
 
 pub fn scan(setting: Setting) -> Result<(), String> {
     // val mode = if (exerciseEnv) "(mode EXC) " else ""
 
+    // First, we need to check if all directories are valid and available.
+
+    // Verify that source directory exists:
     let metadata = fs::metadata(&setting.src_dir);
     if let Err(e) = metadata {
         let err = format!(
@@ -58,30 +60,47 @@ pub fn scan(setting: Setting) -> Result<(), String> {
     }    
 
     println!("Scanning...");
-    let _r = scan_rec(&setting.src_dir, "", &setting); // no suffix path at beginning.
+    if let Err(e) = scan_rec(&setting.src_dir, &setting.src_dest_dir, &setting) {
+        return Err(format!("Scanning files failed with error: {}", e));
+    }
     println!("... done");
     Ok(())
 }
 
-fn scan_rec(dir: &Path, suffix_path: &str, setting: &Setting) -> io::Result<()> {
+/// Scan the files in directory `dir` recursively.
+/// `dir_path` is the path of directories starting from src directory.
+/// `setting` contains the environment for the scan.
+fn scan_rec(dir: &Path, dir_path: &Path, setting: &Setting) -> Result<(), String> {
     println!(" {}", dir.display());
 
     // Recursively scan other directories:
-    for entry in fs::read_dir(dir)? {
-        let entry = entry?;
-        let path = entry.path();
-        if path.is_dir() {
-            scan_rec(&path, suffix_path, setting)?;
+    for entry in fs::read_dir(dir).unwrap() {
+        let entry = entry.unwrap();
+        let next_dir = entry.path();
+        if next_dir.is_dir() {
+            // Add next directory to dir path:
+            let ext_dir_path = dir_path.join(&next_dir.file_name().unwrap());
+            // Make sure nested source destination dirs exist:
+            if !ext_dir_path.is_dir() {
+                if let Err(e) = fs::create_dir(&ext_dir_path) {
+                    return Err(format!(
+                        "Error: Nested source destination directory {} could not be created.\n{}",
+                        ext_dir_path.display(),
+                        e
+                    ));
+                }
+            }
+            scan_rec(&next_dir, &ext_dir_path, setting)?;
         } else {
             // TODO consider path.extension()
             // Test if file matches suffix:
-            if let Some(filename) = path.to_str() {
+            if let Some(filename) = next_dir.to_str() {
                 if filename.ends_with(setting.file_suffix) {
                     // Process file:
-                    println!(" {}", path.display());
-                    parse_write(path.as_path(), setting);
+                    println!(" {}", next_dir.display());
+                    parse_write(next_dir.as_path(), &dir_path, setting);
                 } else {
-                    println!(" skipped {}", path.display());
+                    println!(" skipped {}", next_dir.display());
                 }
             }
         }

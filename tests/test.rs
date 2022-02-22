@@ -1,3 +1,5 @@
+// Integration tests
+
 mod tests {
 
   use std::path::Path;
@@ -34,8 +36,8 @@ mod tests {
   #[test]
   fn scan_new_dirs_public() {
       let setting = public_config();
-      scan(setting);
-      assert_eq!(true, true);
+      let r = scan(setting);
+      assert_eq!(r, Ok(()));
   }
 
   /// Run a full test.

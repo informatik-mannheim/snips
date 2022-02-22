@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 
 const DEFAULTLABEL: &str = "x8gfz4hd"; // just a crazy string.
 
-pub fn parse_write(filepath: &Path, setting: &Setting) -> Result<(), String> {
+pub fn parse_write(filepath: &Path, dir_path: &Path, setting: &Setting) -> Result<(), String> {
     // Make vector of the lines in the text file:
     let file = File::open(filepath).unwrap();
     let reader = BufReader::new(&file);
@@ -16,7 +16,7 @@ pub fn parse_write(filepath: &Path, setting: &Setting) -> Result<(), String> {
 
     // Parse the content of the file:
     let coll = parse(&lines, setting)?;
-    write_files(filepath, &coll, setting);
+    write_files(filepath, dir_path, &coll, setting);
     Ok(())
 }
 
@@ -259,7 +259,7 @@ fn end(label: String, coll: &mut HashMap<String, Record>) -> Result<(), String> 
     }
 }
 
-fn write_files(filepath: &Path, coll: &HashMap<String, Record>, setting: &Setting) {
+fn write_files(filepath: &Path, dir_path: &Path, coll: &HashMap<String, Record>, setting: &Setting) {
     for (label, record) in &*coll {
         // println!("\nFile {}", label);
         // println!("{}", record.buffer);
@@ -272,7 +272,9 @@ fn write_files(filepath: &Path, coll: &HashMap<String, Record>, setting: &Settin
             file1.push(setting.snippet_dest_dir);
             file1.push(filepath.file_name().unwrap());
             write_file(&file1, record);
-            // write_file(srcTargetDir + "/" + file.getName);
+            // Also write full file to src dest:
+            let file = dir_path.join(filename);
+            write_file(&file, record);
         } else {
             let mut path = PathBuf::new();
             path.push(setting.snippet_dest_dir);
