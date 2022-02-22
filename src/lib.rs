@@ -14,7 +14,7 @@ use std::path::Path;
 
 pub const DEFAULTLABEL: &str = "x8gfz4hd"; // crazy string as in ID for default label
 
-pub fn scan(setting: Setting) -> Result<(), String> {
+pub fn scan(setting: &Setting) -> Result<(), String> {
     // val mode = if (exerciseEnv) "(mode EXC) " else ""
 
     // First, we need to check if all directories are valid and available.

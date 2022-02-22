@@ -91,7 +91,7 @@ fn main() {
         .init()
         .unwrap();
 
-    if let Err(e) = scan(setting) {
+    if let Err(e) = scan(&setting) {
         error!("Error: snips failed.");
         error!("{}", e);
     }
