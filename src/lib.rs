@@ -8,26 +8,59 @@ use std::fs;
 use std::io;
 use std::path::Path;
 
-pub fn scan(setting: Setting) {
+pub fn scan(setting: Setting) -> Result<(), String> {
     // val mode = if (exerciseEnv) "(mode EXC) " else ""
 
     let metadata = fs::metadata(&setting.src_dir);
     if let Err(e) = metadata {
-        println!(
-            "Error: Directory {} does not exist.\n{}",
+        let err = format!(
+            "Error: Source directory {} does not exist.\n{}",
             &setting.src_dir.display(),
             e
         );
-        return;
+        return Err(err);
     }
     if !setting.src_dir.is_dir() {
-        println!("Error: {} is not a directory.", &setting.src_dir.display());
-        return;
+        return Err(format!(
+            "Error: Source directory {} is not a directory.",
+            &setting.src_dir.display()
+        ));
     }
+
+    // Verify that snips directory is available:
+    if !setting.snippet_dest_dir.is_dir() {
+        println!(
+            "Create snips destination directory: {}",
+            &setting.snippet_dest_dir.display()
+        );
+        if let Err(e) = fs::create_dir(setting.snippet_dest_dir) {
+            return Err(format!(
+                "Error: snippet destination directory {} could not be created.\n{}",
+                &setting.src_dir.display(),
+                e
+            ));
+        }
+    }
+
+    // Verify that src_dest directory is available:
+    if !setting.src_dest_dir.is_dir() {
+        println!(
+            "Create source destination directory: {}",
+            &setting.src_dest_dir.display()
+        );
+        if let Err(e) = fs::create_dir(setting.src_dest_dir) {
+            return Err(format!(
+                "Error: Source destination directory {} could not be created.\n{}",
+                &setting.src_dest_dir.display(),
+                e
+            ));
+        }
+    }    
 
     println!("Scanning...");
     let _r = scan_rec(&setting.src_dir, "", &setting); // no suffix path at beginning.
     println!("... done");
+    Ok(())
 }
 
 fn scan_rec(dir: &Path, suffix_path: &str, setting: &Setting) -> io::Result<()> {
@@ -60,35 +93,5 @@ fn scan_rec(dir: &Path, suffix_path: &str, setting: &Setting) -> io::Result<()> 
 
 #[cfg(test)]
 mod tests {
-
-    use super::scan;
-    use super::util::Setting;
-    use std::path::Path;
-
-    fn config() -> Setting<'static> {
-        // Path is relative to project root.
-        Setting {
-            src_dir: Path::new("tests/testfiles/src"),
-            snippet_dest_dir: Path::new("tests/testfiles/snippets"),
-            src_dest_dir: Path::new("tests/testfiles/src_dest"),
-            file_suffix: ".java",
-            comment: "//",
-            comment_alternative: "#",
-            exercise_solution: false,
-        }
-    }
-
-    #[test]
-    fn it_works() {
-        let setting = config();
-        scan(setting);
-        assert_eq!(true, true);
-    }
-
-    #[test]
-    fn path_end_test() {
-        let path = Path::new("foo/bar/file.java");
-        let b = path.ends_with("file.java");
-        assert_eq!(b, true);
-    }
+    // There are no unit tests for lib. They are in ./tests
 }

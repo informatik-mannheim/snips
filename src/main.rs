@@ -1,7 +1,7 @@
 use clap::{Arg, Command};
+use std::path::Path;
 use snips::scan;
 use snips::util::Setting;
-use std::path::Path;
 
 fn main() {
     // https://rust-lang-nursery.github.io/rust-cookbook/cli/arguments.html
@@ -52,8 +52,9 @@ fn main() {
                 .help("Include solutions (EXC and EXCSUBST flags)"),
         )
         .after_help(
-            "Longer explanation to appear after the options when \
-                 displaying the help information from --help or -h",
+            "Extract parts (snippets) of source code or text in general \
+                 and copy the stripped files. Useful for source code \
+                 presentation or exercise.",
         )
         .get_matches();
 
@@ -71,5 +72,8 @@ fn main() {
             .unwrap(),
     };
 
-    scan(setting);
+    if let Err(e) = scan(setting) {
+        println!("snips failed.");
+        println!("{}", e);
+    }
 }

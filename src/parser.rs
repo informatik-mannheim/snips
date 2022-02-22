@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 const DEFAULTLABEL: &str = "x8gfz4hd"; // just a crazy string.
 
 pub fn parse_write(filepath: &Path, setting: &Setting) -> Result<(), String> {
-    // Make vector with lines in text file:
+    // Make vector of the lines in the text file:
     let file = File::open(filepath).unwrap();
     let reader = BufReader::new(&file);
     let lines: Vec<String> = reader.lines().map(|e| e.unwrap()).collect();
@@ -20,6 +20,11 @@ pub fn parse_write(filepath: &Path, setting: &Setting) -> Result<(), String> {
     Ok(())
 }
 
+/// Parse a vector of text lines (`lines`) and extract snippets.
+/// The environment is specified in `setting`.
+/// The snippets are returned in a hash map where the keys
+/// are the snippet labels and the processed text file is contained
+/// as the `Record` value.
 pub fn parse(lines: &Vec<String>, setting: &Setting) -> Result<HashMap<String, Record>, String> {
     let no_lines = lines.len(); // of the the source file
 
@@ -30,7 +35,6 @@ pub fn parse(lines: &Vec<String>, setting: &Setting) -> Result<HashMap<String, R
 
     let mut quiet = false; // if true, lines are omitted.
     let mut exercise_quiet = false; // if true, lines are not omitted.
-    // TODO
     // This is the default snippet for extracting the whole source code.
     start(DEFAULTLABEL.to_string(), &mut coll);
 
@@ -72,7 +76,6 @@ pub fn parse(lines: &Vec<String>, setting: &Setting) -> Result<HashMap<String, R
                 quiet = false; // end omitting output.
                 ()
             }
-
             Some(Token::ExerciseToken { start: true }) => {
                 println!("  +EXC");
                 exercise_quiet = true; // start to omit output in exercise mod.
@@ -141,6 +144,8 @@ pub fn parse(lines: &Vec<String>, setting: &Setting) -> Result<HashMap<String, R
     Ok(coll)
 }
 
+/// Test if `text` is an escape comment according to
+/// the settings as specified in `setting`.
 fn is_comment_escape(text: &str, setting: &Setting) -> bool {
     if setting.comment_alternative == "" {
         text == setting.comment // only one escape comment
@@ -320,13 +325,11 @@ enum Token {
 
 #[cfg(test)]
 mod tests {
+    use std::path::Path;
+    use indoc::indoc;
     use crate::parser::parse;
     use crate::parser::DEFAULTLABEL;
-    use indoc::indoc;
-
-    // use super::super::scan;
-    use super::super::util::Setting;
-    use std::path::Path;
+    use crate::util::Setting;
 
     fn str_to_vec(s: &str) -> Vec<String> {
         let lines = s.split("\n");
@@ -336,6 +339,10 @@ mod tests {
         }
         v
     }
+
+    fn str_to_vec2(s: &str) -> Vec<&str> {
+        s.split("\n").collect()
+    }    
 
     fn config() -> Setting<'static> {
         // Path is relative to project root.
