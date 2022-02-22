@@ -2,10 +2,10 @@
 
 // Issues: none
 
-use std::collections::HashMap;
-use log::{debug, trace};
 use crate::util::Setting;
 use crate::DEFAULTLABEL;
+use log::{debug, trace};
+use std::collections::HashMap;
 
 /// Parse a vector of text lines (`lines`) and extract snippets.
 /// The environment is specified in `setting`.
@@ -178,7 +178,6 @@ pub fn parse(lines: &Vec<&str>, setting: &Setting) -> Result<HashMap<String, Rec
 /// Read the next token in the text file's `line`.
 /// The environment is controlled by `setting`:
 fn read_token<'a>(line: &'a str, setting: &'a Setting) -> Option<Token> {
-
     // Test if `text` is an escape comment according to
     // the settings as specified in `setting`.
     let is_comment_escape = |text: &str| {
@@ -515,5 +514,28 @@ mod tests {
             r,
             Err("Line 2: -EXCSUBST without preceding +EXCSUBST".to_string())
         );
+    }
+
+    #[test]
+    fn indented_label() {
+        let s = indoc! {"
+            line 1
+              // +EXCSUBST 0 // line hint
+            line solution
+            // -EXCSUBST
+            line 5
+            "};
+        let ok = indoc! {"
+            line 1
+            // line hint
+            line 5
+    
+            "};
+        // test produces an extra line, therefore this extra line.
+        let lines = str_to_vec(s);
+        let coll = parse(&lines, &config_public()).unwrap();
+        assert_eq!(coll.len(), 1);
+        let test = coll.get(DEFAULTLABEL).unwrap().buffer.as_str();
+        assert_eq!(test, ok);
     }
 }
