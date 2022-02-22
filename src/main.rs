@@ -6,7 +6,7 @@ use snips::util::Setting;
 fn main() {
     // https://rust-lang-nursery.github.io/rust-cookbook/cli/arguments.html
     let args = Command::new("snips")
-        .author("(c) 2022 by Markus Gumbel")
+        .author("(c) 2022 by Markus Gumbel (m.gumbel@hs-mannheim.de)")
         .version("0.1.0")
         .about("Collects snippets of text or source-code files.")
         .arg(
@@ -73,7 +73,7 @@ fn main() {
     };
 
     if let Err(e) = scan(setting) {
-        println!("snips failed.");
+        println!("Error: snips failed.");
         println!("{}", e);
     }
 }

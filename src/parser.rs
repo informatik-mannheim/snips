@@ -2,25 +2,9 @@
 
 // Issues: none
 
-use crate::util::Setting;
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
-use std::path::{Path, PathBuf};
-
-const DEFAULTLABEL: &str = "x8gfz4hd"; // just a crazy string.
-
-pub fn parse_write(filepath: &Path, dir_path: &Path, setting: &Setting) -> Result<(), String> {
-    // Make vector of the lines in the text file:
-    let file = File::open(filepath).unwrap();
-    let reader = BufReader::new(&file);
-    let lines: Vec<String> = reader.lines().map(|e| e.unwrap()).collect();
-
-    // Parse the content of the file:
-    let coll = parse(&lines, setting)?;
-    write_files(filepath, dir_path, &coll, setting);
-    Ok(())
-}
+use crate::DEFAULTLABEL;
+use crate::util::Setting;
 
 /// Parse a vector of text lines (`lines`) and extract snippets.
 /// The environment is specified in `setting`.
@@ -49,10 +33,12 @@ pub fn parse(lines: &Vec<String>, setting: &Setting) -> Result<HashMap<String, R
     // Process line by line...
     for (counter, line) in lines.iter().enumerate() {
         let line_no = counter + 1; // counter starts at 0.
-                                   // Show the line and its number.
-                                   // println!("{}. {}", counter + 1, line);
 
-        let _ = match test_token(&line, &setting) {
+        // Show the line and its number.
+        // println!("{}. {}", counter + 1, line);
+
+        // Parse the next token:
+        let _ = match read_token(&line, &setting) {
             // see if this line is a token.
             Some(Token::RegularToken { label, start: true }) => {
                 println!("  + {}", label); // begin of a code snippet.
@@ -70,7 +56,7 @@ pub fn parse(lines: &Vec<String>, setting: &Setting) -> Result<HashMap<String, R
                 start: false,
             }) => {
                 println!("  - {}", label); // end of a code snippet.
-                end(label.to_string(), &mut coll);
+                end(label.to_string(), &mut coll)?;
                 if line_no < no_lines {
                     // Print ... but not at the end of the file.
                     coll.get_mut(&label).unwrap().buffer.push_str("...\n");
@@ -198,7 +184,9 @@ fn is_comment_escape(text: &str, setting: &Setting) -> bool {
     }
 }
 
-fn test_token<'a>(line: &'a str, setting: &'a Setting) -> Option<Token> {
+/// Read the next token in the text file's `line`.
+/// The environment is controlled by `setting`:
+fn read_token<'a>(line: &'a str, setting: &'a Setting) -> Option<Token> {
     // let line = line.clone();
     let tokens: Vec<&str> = line.trim().split_whitespace().collect();
 
@@ -302,43 +290,6 @@ fn end(label: String, coll: &mut HashMap<String, Record>) -> Result<(), String> 
         coll.get_mut(&label).unwrap().active = false;
         Result::Ok(())
     }
-}
-
-fn write_files(
-    filepath: &Path,
-    dir_path: &Path,
-    coll: &HashMap<String, Record>,
-    setting: &Setting,
-) {
-    for (label, record) in &*coll {
-        // println!("\nFile {}", label);
-        // println!("{}", record.buffer);
-
-        let filename = filepath.file_stem().unwrap();
-        let suffix = filepath.extension().unwrap();
-
-        if label == DEFAULTLABEL {
-            // Write snippet:
-            let snippet_file = setting.snippet_dest_dir.join(filename);
-            write_file(&snippet_file, record);
-            // Also write full file to src dest:
-            let full_file = dir_path.join(filename);
-            write_file(&full_file, record);
-        } else {
-            let ext_filename = format!(
-                "{}_{}.{}",
-                filename.to_str().unwrap(),
-                label,
-                suffix.to_str().unwrap()
-            );
-            let file = setting.snippet_dest_dir.join(ext_filename);
-            write_file(&file, record);
-        }
-    }
-}
-
-fn write_file(filepath: &Path, record: &Record) {
-    std::fs::write(filepath, record.buffer.as_str()).expect("Unable to write file");
 }
 
 /// @param active  true if lines are printed.

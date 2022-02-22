@@ -1,11 +1,17 @@
 // lib
 pub mod parser;
+pub mod file;
 pub mod util;
 
-use crate::parser::parse_write;
-use crate::util::Setting;
+use std::io::{BufReader, BufRead};
 use std::fs;
+use std::fs::File;
 use std::path::Path;
+use crate::parser::parse;
+use crate::file::write_files;
+use crate::util::Setting;
+
+pub const DEFAULTLABEL: &str = "x8gfz4hd"; // just a crazy string.
 
 pub fn scan(setting: Setting) -> Result<(), String> {
     // val mode = if (exerciseEnv) "(mode EXC) " else ""
@@ -98,13 +104,25 @@ fn scan_rec(dir: &Path, dir_path: &Path, setting: &Setting) -> Result<(), String
                 if filename.ends_with(setting.file_suffix) {
                     // Process file:
                     println!(" {}", next_dir.display());
-                    parse_write(next_dir.as_path(), &dir_path, setting);
+                    parse_write(next_dir.as_path(), &dir_path, setting)?;
                 } else {
                     println!(" skipped {}", next_dir.display());
                 }
             }
         }
     }
+    Ok(())
+}
+
+pub fn parse_write(filepath: &Path, dir_path: &Path, setting: &Setting) -> Result<(), String> {
+    // Make vector of the lines in the text file:
+    let file = File::open(filepath).unwrap();
+    let reader = BufReader::new(&file);
+    let lines: Vec<String> = reader.lines().map(|e| e.unwrap()).collect();
+
+    // Parse the content of the file:
+    let coll = parse(&lines, setting)?;
+    write_files(filepath, dir_path, &coll, setting);
     Ok(())
 }
 
