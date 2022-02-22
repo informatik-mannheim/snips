@@ -1,48 +1,45 @@
 // Integration tests
 
-mod util {
-    use std::path::Path;
-
-    /// Compare two text files.
-    /// Important: Even the newlines (Windows vs. Unix) have to be
-    /// identical.
-    pub fn compare_files(filepath1: &Path, filepath2: &Path) -> bool {
-        use file_diff::diff_files;
-        use std::fs::File;
-
-        let mut file1 = File::open(filepath1).expect("file 1");
-        let mut file2 = File::open(filepath2).expect("file 2");
-        diff_files(&mut file1, &mut file2)
-    }
-}
-
 mod tests {
 
-    use super::util::compare_files;
+    use file_diff::diff_files;
+    use std::fs::File;
+    use std::path::{Path, PathBuf};
     use snips::scan;
     use snips::util::Setting;
-    use std::path::Path;
 
+    // Here a the correct files:
     fn src_templ() -> &'static Path {
         Path::new("./tests/testfiles/template")
     }
 
-    fn public_files() -> Vec<(&'static str, &'static str)> {
+    // All file pairs for public generated snippet files:
+    fn public_files() -> Vec<(PathBuf, PathBuf)> {
+        let gen = public_config().snippet_dest_dir;
+        let corr = src_templ();
         // generated file; correct file
         vec![
-            ("Testfile_IN_Slide.java", "Testfile_IN_Slide-public.java"),
             (
-                "Testfile_IN_Slide_Slide.java",
-                "Testfile_IN_Slide_Slide-public.java",
+                gen.join("Testfile_IN_Slide.java"),
+                corr.join("Testfile_IN_Slide-public.java"),
+            ),
+            (
+                gen.join("Testfile_IN_Slide_Slide.java"),
+                corr.join("Testfile_IN_Slide_Slide-public.java"),
             ),
         ]
     }
 
-    fn check_files(file_pairs: &Vec<(&str, &str)>, s: &Setting) -> bool {
-        for (f1, f2) in file_pairs {
-            let t = compare_files(&s.snippet_dest_dir.join(f1), &src_templ().join(f2));
+    // Compare all files for equality.
+    // Important: event the newline representation (Windows vs. Unix)
+    // must be equal.
+    fn check_files(file_pairs: &Vec<(PathBuf, PathBuf)>, s: &Setting) -> bool {
+        for (filepath1, filepath2) in file_pairs {
+            let mut file1 = File::open(filepath1).expect("f1");
+            let mut file2 = File::open(filepath2).expect("f1");
+            let t = diff_files(&mut file1, &mut file2);
             if !t {
-                println!("{} vs: {}", f1, f2);
+                println!("{} vs: {}", filepath1.display(), filepath2.display());
                 return false;
             }
         }
