@@ -205,3 +205,28 @@ fn indented_label() {
     let test = coll.get(DEFAULTLABEL).unwrap().buffer.as_str();
     assert_eq!(test, ok);
 }
+
+/// The OUT-label cuts off inner IN-labels.
+#[test]
+fn nested_out_in() {
+    let s = indoc! {"
+            line 1
+            // +OUT
+            line 3
+            // +IN foo
+            line 5
+            // -IN foo
+            line 7
+            // -OUT
+            "};
+    let ok = indoc! {"
+            line 1
+    
+            "};
+    // test produces an extra line, therefore this extra line.
+    let lines = str_to_vec(s);
+    let coll = parse(&lines, &config_public()).unwrap();
+    assert_eq!(coll.len(), 2);
+    let test = coll.get(DEFAULTLABEL).unwrap().buffer.as_str();
+    assert_eq!(test, ok);
+}
