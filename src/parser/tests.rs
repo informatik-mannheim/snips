@@ -5,35 +5,37 @@ use crate::parser::parse;
 use crate::parser::DEFAULTLABEL;
 use crate::util::Setting;
 use indoc::indoc;
-use std::path::Path;
+use std::path::PathBuf;
 
 fn str_to_vec(s: &str) -> Vec<&str> {
     s.split("\n").collect()
 }
 
-fn config_public() -> Setting<'static> {
+fn config_public() -> Setting {
     // Path is relative to project root.
     Setting {
-        src_dir: Path::new("tests/testfiles/src"),
-        snippet_dest_dir: Path::new("tests/testfiles/snippets"),
-        src_dest_dir: Path::new("tests/testfiles/src_dest"),
-        file_suffix: ".java",
-        comment: "//",
-        comment_alternative: "#",
+        src_dir: PathBuf::from("tests/testfiles/src"),
+        snippet_dest_dir: PathBuf::from("tests/testfiles/snippets"),
+        src_dest_dir: PathBuf::from("tests/testfiles/src_dest"),
+        file_suffix: ".java".to_string(),
+        comment: "//".to_string(),
+        comment_alternative: "#".to_string(),
         exercise_solution: false,
+        verbosity: 0
     }
 }
 
-fn config_solution() -> Setting<'static> {
+fn config_solution() -> Setting {
     // Path is relative to project root.
     Setting {
-        src_dir: Path::new("tests/testfiles/src"),
-        snippet_dest_dir: Path::new("tests/testfiles/snippets"),
-        src_dest_dir: Path::new("tests/testfiles/src_dest"),
-        file_suffix: ".java",
-        comment: "//",
-        comment_alternative: "#",
+        src_dir: PathBuf::from("tests/testfiles/src"),
+        snippet_dest_dir: PathBuf::from("tests/testfiles/snippets"),
+        src_dest_dir: PathBuf::from("tests/testfiles/src_dest"),
+        file_suffix: ".java".to_string(),
+        comment: "//".to_string(),
+        comment_alternative: "#".to_string(),
         exercise_solution: true,
+        verbosity: 0
     }
 }
 

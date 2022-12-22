@@ -42,7 +42,7 @@ pub fn scan(setting: &Setting) -> Result<(), String> {
             "Create snips destination directory: {}",
             &setting.snippet_dest_dir.display()
         );
-        if let Err(e) = fs::create_dir(setting.snippet_dest_dir) {
+        if let Err(e) = fs::create_dir(&setting.snippet_dest_dir) {
             return Err(format!(
                 "Error: snippet destination directory {} could not be created.\n{}",
                 &setting.src_dir.display(),
@@ -57,7 +57,7 @@ pub fn scan(setting: &Setting) -> Result<(), String> {
             "Create source destination directory: {}",
             &setting.src_dest_dir.display()
         );
-        if let Err(e) = fs::create_dir(setting.src_dest_dir) {
+        if let Err(e) = fs::create_dir(&setting.src_dest_dir) {
             return Err(format!(
                 "Error: Source destination directory {} could not be created.\n{}",
                 &setting.src_dest_dir.display(),
@@ -101,7 +101,8 @@ fn scan_rec(dir: &Path, dir_path: &Path, setting: &Setting) -> Result<(), String
         } else {
             // Test if file matches suffix:
             if let Some(filename) = next_dir.to_str() {
-                if filename.ends_with(setting.file_suffix) {
+                // TODO Check if file ends with provided suffixes:
+                if filename.ends_with(&setting.file_suffix) {
                     // Process file:
                     info!(" {}", next_dir.display());
                     parse_write(next_dir.as_path(), &dir_path, setting)?;

@@ -46,29 +46,31 @@ mod tests {
         true
     }
 
-    fn public_config() -> Setting<'static> {
+    fn public_config() -> Setting {
         // Path is relative to project root.
         Setting {
-            src_dir: Path::new("tests/testfiles/src"),
-            snippet_dest_dir: Path::new("tests/testfiles/public/snippets"),
-            src_dest_dir: Path::new("tests/testfiles/public/src_dest"),
-            file_suffix: ".java",
-            comment: "//",
-            comment_alternative: "#",
+            src_dir: PathBuf::from("tests/testfiles/src"),
+            snippet_dest_dir: PathBuf::from("tests/testfiles/public/snippets"),
+            src_dest_dir: PathBuf::from("tests/testfiles/public/src_dest"),
+            file_suffix: ".java".to_string(),
+            comment: "//".to_string(),
+            comment_alternative: "#".to_string(),
             exercise_solution: false,
+            verbosity: 0
         }
     }
 
-    fn solution_config() -> Setting<'static> {
+    fn solution_config() -> Setting {
         // Path is relative to project root.
         Setting {
-            src_dir: Path::new("tests/testfiles/src"),
-            snippet_dest_dir: Path::new("tests/testfiles/solution/snippets"),
-            src_dest_dir: Path::new("tests/testfiles/solution/src_dest"),
-            file_suffix: ".java",
-            comment: "//",
-            comment_alternative: "#",
+            src_dir: PathBuf::from("tests/testfiles/src"),
+            snippet_dest_dir: PathBuf::from("tests/testfiles/solution/snippets"),
+            src_dest_dir: PathBuf::from("tests/testfiles/solution/src_dest"),
+            file_suffix: ".java".to_string(),
+            comment: "//".to_string(),
+            comment_alternative: "#".to_string(),
             exercise_solution: true,
+            verbosity: 0
         }
     }
 
