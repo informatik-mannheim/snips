@@ -12,7 +12,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 
-pub const DEFAULTLABEL: &str = "x8gfz4hd"; // crazy string as in ID for default label
+pub const DEFAULTLABEL: &str = "x8gfz4hd"; // crazy string as an ID for default label
 
 pub fn scan(setting: &Setting) -> Result<(), String> {
     // val mode = if (exerciseEnv) "(mode EXC) " else ""
