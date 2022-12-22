@@ -18,10 +18,9 @@ fn config_public() -> Setting {
         snippet_dest_dir: PathBuf::from("tests/testfiles/snippets"),
         src_dest_dir: PathBuf::from("tests/testfiles/src_dest"),
         file_suffix: vec![".java".to_string()],
-        comment: "//".to_string(),
-        comment_alternative: "#".to_string(),
+        comment: vec!["//".to_string()],
         exercise_solution: false,
-        verbosity: 0
+        verbosity: 0,
     }
 }
 
@@ -32,10 +31,9 @@ fn config_solution() -> Setting {
         snippet_dest_dir: PathBuf::from("tests/testfiles/snippets"),
         src_dest_dir: PathBuf::from("tests/testfiles/src_dest"),
         file_suffix: vec![".java".to_string()],
-        comment: "//".to_string(),
-        comment_alternative: "#".to_string(),
+        comment: vec!["//".to_string()],
         exercise_solution: true,
-        verbosity: 0
+        verbosity: 0,
     }
 }
 

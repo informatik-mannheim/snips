@@ -53,8 +53,7 @@ mod tests {
             snippet_dest_dir: PathBuf::from("tests/testfiles/public/snippets"),
             src_dest_dir: PathBuf::from("tests/testfiles/public/src_dest"),
             file_suffix: vec![".java".to_string()],
-            comment: "//".to_string(),
-            comment_alternative: "#".to_string(),
+            comment: vec!["//".to_string()],
             exercise_solution: false,
             verbosity: 0
         }
@@ -67,8 +66,7 @@ mod tests {
             snippet_dest_dir: PathBuf::from("tests/testfiles/solution/snippets"),
             src_dest_dir: PathBuf::from("tests/testfiles/solution/src_dest"),
             file_suffix: vec![".java".to_string()],
-            comment: "//".to_string(),
-            comment_alternative: "#".to_string(),
+            comment: vec!["//".to_string()],
             exercise_solution: true,
             verbosity: 0
         }

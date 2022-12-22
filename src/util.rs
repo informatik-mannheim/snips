@@ -26,13 +26,9 @@ pub struct Setting {
     #[arg(short= 'x', long, value_name = "suffix", default_value  = ".txt")]
     pub file_suffix: Vec<String>,
 
-    /// Escape comment symbol, e.g. # or //.
+    /// One or more escape comment symbols, e.g. # or //.
     #[arg(short = 'c', long, value_name = "comment", default_value  = "#")]
-    pub comment: String,
-
-    /// Alternative escape comment symbol.
-    #[arg(short = 'a', long, value_name = "comment", default_value  = "//")]
-    pub comment_alternative: String,
+    pub comment: Vec<String>,
 
     /// Include solutions (EXC and EXCSUBST flags).
     #[arg(short = 'e', long)]

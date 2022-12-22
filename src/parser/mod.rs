@@ -183,11 +183,7 @@ fn read_token<'a>(line: &'a str, setting: &'a Setting) -> Option<Token> {
     // Test if `text` is an escape comment according to
     // the settings as specified in `setting`.
     let is_comment_escape = |text: &str| {
-        if setting.comment_alternative == "" {
-            text == setting.comment // only one escape comment
-        } else {
-            text == setting.comment || text == setting.comment_alternative
-        }
+        setting.comment.iter().any(|s| text == s)
     };
 
     // let line = line.clone();

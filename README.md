@@ -249,7 +249,7 @@ print(a)
 ```
 
 Note that there were two escape comments used. 1) // for markdown and 2
-) # for R comments. This is useful because a # in markdown would render a header. Thus, any snippet option would be displayed as a header in the primary document. Telling snippet to use // as a comment with snippet options mitigates this.
+) # for R comments. This is useful because a # in markdown would render a header. Thus, any snippet option would be displayed as a header in the primary document. Telling `snips` to use // as a comment with snippet options mitigates this. The option `-c` (or `--comment`) can be passed multiple times when more than one escape comment is needed. In our example this would be `-c #  -c //`.
 
 The public version (in `src_dest`) will then contain
 
@@ -333,15 +333,14 @@ The usage of the command line tool is:
 Usage: snips.exe [OPTIONS] --src-dir <directory>
 
 Options:
-  -s, --src-dir <directory>            Directory with source files
-  -t, --snippet-dest-dir <directory>   Directory where snippet files will be stored [default: ./snippets]
-  -d, --src-dest-dir <directory>       Directory where stripped source files will be stored [default: ./src_dest]
-  -x, --file-suffix <suffix>           One or more file suffixes of files to process [default: .txt]
-  -c, --comment <comment>              Escape comment symbol, e.g. # or // [default: #]
-  -a, --comment-alternative <comment>  Alternative escape comment symbol [default: //]
-  -e, --exercise-solution              Include solutions (EXC and EXCSUBST flags)
-  -v, --verbosity...                   Add this flag multiple times to increase message verbosity        
-  -h, --help                           Print help information
-  -V, --version                        Print version information
+  -s, --src-dir <directory>           Directory with source files
+  -t, --snippet-dest-dir <directory>  Directory where snippet files will be stored [default: ./snippets] 
+  -d, --src-dest-dir <directory>      Directory where stripped source files will be stored [default: ./src_dest]
+  -x, --file-suffix <suffix>          One or more file suffixes of files to process [default: .txt]      
+  -c, --comment <comment>             One or more escape comment symbols, e.g. # or // [default: #]      
+  -e, --exercise-solution             Include solutions (EXC and EXCSUBST flags)
+  -v, --verbosity...                  Add this flag multiple times to increase message verbosity
+  -h, --help                          Print help information
+  -V, --version                       Print version information
 ```    
 
