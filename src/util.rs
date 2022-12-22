@@ -3,8 +3,9 @@ use std::path::PathBuf;
 
 /// The settings for a snippet run.
 #[derive(Parser)]
-#[command(name = "MyApp")]
-#[command(author = "Kevin K. <kbknapp@gmail.com>")]
+#[command(name = "snips")]
+#[command(version = "0.2.0")]
+#[command(author = "Markus Gumbel")]
 #[command(about = "Extract parts (snippets) of source code or text in general 
 and copy the stripped files. Useful for source code \
 presentation or exercises.", long_about = None)]
@@ -21,9 +22,9 @@ pub struct Setting {
     #[arg(short= 'd', long, value_name = "directory", default_value  = "./src_dest")]
     pub src_dest_dir: PathBuf,
 
-    /// File suffix of files to process.
+    /// One or more file suffixes of files to process.
     #[arg(short= 'x', long, value_name = "suffix", default_value  = ".txt")]
-    pub file_suffix: String,
+    pub file_suffix: Vec<String>,
 
     /// Escape comment symbol, e.g. # or //.
     #[arg(short = 'c', long, value_name = "comment", default_value  = "#")]

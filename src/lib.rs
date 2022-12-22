@@ -101,14 +101,15 @@ fn scan_rec(dir: &Path, dir_path: &Path, setting: &Setting) -> Result<(), String
         } else {
             // Test if file matches suffix:
             if let Some(filename) = next_dir.to_str() {
-                // TODO Check if file ends with provided suffixes:
-                if filename.ends_with(&setting.file_suffix) {
+                // Check if file ends with provided suffixes:
+                let file_match = setting.file_suffix.iter().any(|s| filename.ends_with(s));
+                if file_match {
                     // Process file:
                     info!(" {}", next_dir.display());
                     parse_write(next_dir.as_path(), &dir_path, setting)?;
                 } else {
                     // TODO skip or just copy...?
-                    info!(" skipped {}", next_dir.display());
+                    debug!(" skipped {}", next_dir.display());
                 }
             }
         }

@@ -33,7 +33,7 @@ mod tests {
     // Compare all files for equality.
     // Important: event the newline representation (Windows vs. Unix)
     // must be equal.
-    fn check_files(file_pairs: &Vec<(PathBuf, PathBuf)>, s: &Setting) -> bool {
+    fn check_files(file_pairs: &Vec<(PathBuf, PathBuf)>, _s: &Setting) -> bool {
         for (filepath1, filepath2) in file_pairs {
             let mut file1 = File::open(filepath1).expect("f1");
             let mut file2 = File::open(filepath2).expect("f1");
@@ -52,7 +52,7 @@ mod tests {
             src_dir: PathBuf::from("tests/testfiles/src"),
             snippet_dest_dir: PathBuf::from("tests/testfiles/public/snippets"),
             src_dest_dir: PathBuf::from("tests/testfiles/public/src_dest"),
-            file_suffix: ".java".to_string(),
+            file_suffix: vec![".java".to_string()],
             comment: "//".to_string(),
             comment_alternative: "#".to_string(),
             exercise_solution: false,
@@ -66,7 +66,7 @@ mod tests {
             src_dir: PathBuf::from("tests/testfiles/src"),
             snippet_dest_dir: PathBuf::from("tests/testfiles/solution/snippets"),
             src_dest_dir: PathBuf::from("tests/testfiles/solution/src_dest"),
-            file_suffix: ".java".to_string(),
+            file_suffix: vec![".java".to_string()],
             comment: "//".to_string(),
             comment_alternative: "#".to_string(),
             exercise_solution: true,
