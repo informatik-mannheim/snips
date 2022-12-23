@@ -34,6 +34,10 @@ pub struct Setting {
     #[arg(short = 'e', long)]
     pub exercise_solution: bool,
 
+    /// Force (re-)generation of all snippets.
+    #[arg(short = 'f', long)]
+    pub force_update: bool,
+
     /// Add this flag multiple times to increase message verbosity.
     #[arg(short= 'v', long, action = clap::ArgAction::Count)]
     pub verbosity: u8,

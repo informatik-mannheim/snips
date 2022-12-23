@@ -3,10 +3,10 @@
 mod tests {
 
     use file_diff::diff_files;
-    use std::fs::File;
-    use std::path::{Path, PathBuf};
     use snips::scan;
     use snips::util::Setting;
+    use std::fs::File;
+    use std::path::{Path, PathBuf};
 
     // Here a the correct files:
     fn src_templ() -> &'static Path {
@@ -31,7 +31,7 @@ mod tests {
     }
 
     // Compare all files for equality.
-    // Important: event the newline representation (Windows vs. Unix)
+    // Important: even the newline representation (Windows vs. Unix)
     // must be equal.
     fn check_files(file_pairs: &Vec<(PathBuf, PathBuf)>, _s: &Setting) -> bool {
         for (filepath1, filepath2) in file_pairs {
@@ -55,7 +55,8 @@ mod tests {
             file_suffix: vec![".java".to_string()],
             comment: vec!["//".to_string()],
             exercise_solution: false,
-            verbosity: 0
+            force_update: true,
+            verbosity: 0,
         }
     }
 
@@ -68,7 +69,8 @@ mod tests {
             file_suffix: vec![".java".to_string()],
             comment: vec!["//".to_string()],
             exercise_solution: true,
-            verbosity: 0
+            force_update: true,
+            verbosity: 0,
         }
     }
 

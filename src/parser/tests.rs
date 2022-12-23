@@ -20,6 +20,7 @@ fn config_public() -> Setting {
         file_suffix: vec![".java".to_string()],
         comment: vec!["//".to_string()],
         exercise_solution: false,
+        force_update: true,
         verbosity: 0,
     }
 }
@@ -33,6 +34,7 @@ fn config_solution() -> Setting {
         file_suffix: vec![".java".to_string()],
         comment: vec!["//".to_string()],
         exercise_solution: true,
+        force_update: true,
         verbosity: 0,
     }
 }
