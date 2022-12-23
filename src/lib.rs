@@ -2,7 +2,7 @@ pub mod file;
 pub mod parser;
 pub mod util;
 
-use crate::file::write_files;
+use crate::file::{copy_file, test_if_modified, write_files};
 use crate::parser::parse;
 use crate::util::Setting;
 use log::{debug, info, warn};
@@ -10,7 +10,6 @@ use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
-use try_catch::catch;
 
 pub const DEFAULTLABEL: &str = "x8gfz4hd"; // crazy string as an ID for default label
 
@@ -38,12 +37,12 @@ pub fn scan(setting: &Setting) -> Result<(), String> {
     // Verify that snippet directory is available:
     if !setting.snippet_dest_dir.is_dir() {
         warn!(
-            "Create snips destination directory: {}",
+            "Create snippets destination directory: {}",
             &setting.snippet_dest_dir.display()
         );
         if let Err(e) = fs::create_dir(&setting.snippet_dest_dir) {
             return Err(format!(
-                "Error: snippet destination directory {} could not be created.\n{}",
+                "Error: snippets destination directory {} could not be created.\n{}",
                 &setting.src_dir.display(),
                 e
             ));
@@ -116,8 +115,15 @@ fn scan_rec(src_dir: &Path, src_dest_dir: &Path, setting: &Setting) -> Result<()
                         debug!(" {} not modified", file.display());
                     }
                 } else {
-                    // TODO skip or just copy...?
-                    debug!(" skipped {}", file.display());
+                    if setting.copy_other_files {
+                        // Skip or just copy...?
+                        if let Err(_) = copy_file(file.as_path(), &src_dest_dir, setting) {
+                            return Err(format!("Copying file failed: {}", file.display()));
+                        }
+                        debug!(" copied {}", file.display());
+                    } else {
+                        debug!(" skipped {}", file.display());
+                    }
                 }
             }
         }
@@ -136,44 +142,6 @@ pub fn parse_write(filepath: &Path, src_dest_dir: &Path, setting: &Setting) -> R
     let coll = parse(&lines, setting)?;
     write_files(filepath, src_dest_dir, &coll, setting);
     Ok(())
-}
-
-/// Test if the file to be processed (represented by `filepath`) is modified,
-/// i.e. newer than the file(s) being created. The time stamp of the files is compared.
-/// `src_dest_path` is the path to the current source destination folder.
-/// `setting` contains, among other things, the path to the snippets folder.
-/// Returns true if time stamp of file is newer than
-/// processed file or if the processed file
-/// does not exist yet. Returns false if not.
-fn test_if_modified(filepath: &Path, src_dest_path: &Path, setting: &Setting) -> bool {
-    if setting.force_update {
-        return true; // Update always.
-    }
-
-    catch! {
-        try {
-            // Time stamp (in ms) when source file was last modified:
-            let src_mod_time = fs::metadata(filepath)?.modified()?;
-            // Target files:
-            let filename = filepath.file_name().unwrap();
-            let snippet_filepath = setting.snippet_dest_dir.join(filename);
-            let snippet_file = fs::metadata(snippet_filepath);
-            let src_dest_filepath = src_dest_path.join(filename);
-            let src_dest_file = fs::metadata(src_dest_filepath);
-            // Both, the snippet and the source file must exist:
-            if snippet_file.is_ok() && src_dest_file.is_ok() {
-                // Time stamp (in ms) when target file was last modified:
-                let target_mod_time = snippet_file?.modified()?;
-                src_mod_time > target_mod_time // file newer?
-            } else {
-                true // This file needs to be (re-)created.
-            }
-        }
-        catch err {
-            warn!("Internal error: checking file modification failed: {}", err);
-            true // Update file anyway then.
-        }
-    }
 }
 
 // Unit tests

@@ -340,13 +340,16 @@ Options:
   -c, --comment <comment>             One or more escape comment symbols, e.g. # or // [default: #]      
   -e, --exercise-solution             Include solutions (EXC and EXCSUBST flags)
   -f, --force-update                  Force (re-)generation of all snippets
+  -o, --copy-other-files              Copy also all other files to src_dest_dir
   -v, --verbosity...                  Add this flag multiple times to increase message verbosity
   -h, --help                          Print help information
   -V, --version                       Print version information
 ```    
 Note that `snips` will only update any snippets if the time stamp of the source file is newer than the snippet's time stamp. If a snippet does not yet exist the file is created anyway. The flag `-f` will force an update on all files no matter of the time stamp.
 
+The flag `-o` will copy _all_ files to the source destination folder, independently of whether a file is scanned for snippets (via file-suffix option `-x`) or not. This option is useful to create a complete project structure. Typical files not under snips-control are images, resources files etc.
+
 # Future work
 
- * copy on demand all other files, controlled by a flag `-o`, except those listed in `.snipsignore` similar to `.gitignore`)
+ * Use a `.snipsignore` file similar to `.gitignore`
  * get rid off UTF-8 constraint

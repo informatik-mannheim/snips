@@ -21,6 +21,7 @@ fn config_public() -> Setting {
         comment: vec!["//".to_string()],
         exercise_solution: false,
         force_update: true,
+        copy_other_files: false,
         verbosity: 0,
     }
 }
@@ -35,6 +36,7 @@ fn config_solution() -> Setting {
         comment: vec!["//".to_string()],
         exercise_solution: true,
         force_update: true,
+        copy_other_files: false,
         verbosity: 0,
     }
 }
